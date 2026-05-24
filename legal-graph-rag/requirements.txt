@@ -1,0 +1,33 @@
+# ─── LLM & Inference ───────────────────────────────────────────
+groq
+
+# ─── LangChain Ecosystem ───────────────────────────────────────
+langchain
+langchain-community
+langchain-groq
+langgraph
+langsmith
+
+# ─── Graph Database ────────────────────────────────────────────
+neo4j
+
+# ─── Guardrails ────────────────────────────────────────────────
+nemoguardrails
+
+# ─── PDF Parsing ───────────────────────────────────────────────
+pdfplumber
+pypdf
+
+# ─── Data Handling ─────────────────────────────────────────────
+pandas
+jsonlines
+
+# ─── Utilities ─────────────────────────────────────────────────
+python-dotenv
+pydantic
+tenacity
+tqdm
+
+# ─── Scraping (v2) ─────────────────────────────────────────────
+requests
+beautifulsoup4
