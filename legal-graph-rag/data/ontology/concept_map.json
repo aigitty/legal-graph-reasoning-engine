@@ -1,0 +1,426 @@
+[
+  {
+    "concept_id": "wrongful_termination",
+    "name": "wrongful termination",
+    "description": "Termination of employment without following the legal procedure prescribed under the Industrial Disputes Act",
+    "aliases": [
+      "fired without cause",
+      "illegal termination",
+      "unfair dismissal",
+      "unlawful termination",
+      "terminated illegally",
+      "dismissed unfairly",
+      "wrongfully dismissed"
+    ],
+    "maps_to": [
+      {"section_id": "IDA_1947_S25F", "relevance": "primary"},
+      {"section_id": "IDA_1947_S2A",  "relevance": "primary"},
+      {"section_id": "IDA_1947_S11A", "relevance": "supporting"},
+      {"section_id": "IDA_1947_S25G", "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "retrenchment",
+    "name": "retrenchment",
+    "description": "Termination of a workman's service by the employer for any reason other than disciplinary action",
+    "aliases": [
+      "retrenched",
+      "laid off permanently",
+      "job cut",
+      "workforce reduction",
+      "redundancy"
+    ],
+    "maps_to": [
+      {"section_id": "IDA_1947_S25F",  "relevance": "primary"},
+      {"section_id": "IDA_1947_S25G",  "relevance": "primary"},
+      {"section_id": "IDA_1947_S25H",  "relevance": "supporting"},
+      {"section_id": "IDA_1947_S25N",  "relevance": "supporting"},
+      {"section_id": "IDA_1947_S25FFF","relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "notice_period",
+    "name": "notice period",
+    "description": "Mandatory advance notice required before retrenchment, closure or termination",
+    "aliases": [
+      "termination notice",
+      "fired without notice",
+      "no notice given",
+      "one month notice",
+      "notice not given",
+      "resignation notice"
+    ],
+    "maps_to": [
+      {"section_id": "IDA_1947_S25F",   "relevance": "primary"},
+      {"section_id": "IDA_1947_S25FFA", "relevance": "primary"},
+      {"section_id": "IDA_1947_S25N",   "relevance": "supporting"},
+      {"section_id": "KSEA_1961_S39",   "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "retrenchment_compensation",
+    "name": "retrenchment compensation",
+    "description": "Compensation payable to a workman at the time of retrenchment — 15 days average pay per completed year of service",
+    "aliases": [
+      "severance pay",
+      "termination pay",
+      "compensation on retrenchment",
+      "15 days wages",
+      "separation pay"
+    ],
+    "maps_to": [
+      {"section_id": "IDA_1947_S25F",   "relevance": "primary"},
+      {"section_id": "IDA_1947_S25N",   "relevance": "supporting"},
+      {"section_id": "IDA_1947_S25FFF", "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "gratuity",
+    "name": "gratuity",
+    "description": "Lump sum payment made by employer to employee on retirement, resignation or death after 5 years of continuous service",
+    "aliases": [
+      "gratuity payment",
+      "gratuity eligibility",
+      "gratuity claim",
+      "gratuity on resignation",
+      "gratuity after 5 years",
+      "end of service payment"
+    ],
+    "maps_to": [
+      {"section_id": "PGA_1972_S4",  "relevance": "primary"},
+      {"section_id": "PGA_1972_S2A", "relevance": "primary"},
+      {"section_id": "PGA_1972_S7",  "relevance": "supporting"},
+      {"section_id": "PGA_1972_S8",  "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "continuous_service",
+    "name": "continuous service",
+    "description": "Uninterrupted employment with an employer — required for gratuity eligibility and retrenchment rights",
+    "aliases": [
+      "years of service",
+      "service period",
+      "length of service",
+      "employment duration",
+      "continuous employment"
+    ],
+    "maps_to": [
+      {"section_id": "PGA_1972_S2A", "relevance": "primary"},
+      {"section_id": "IDA_1947_S25B","relevance": "primary"},
+      {"section_id": "PGA_1972_S4",  "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "minimum_wages",
+    "name": "minimum wages",
+    "description": "Minimum rate of wages fixed by the government for scheduled employments",
+    "aliases": [
+      "minimum wage",
+      "minimum pay",
+      "wage floor",
+      "below minimum wage",
+      "underpaid",
+      "not paying minimum wage"
+    ],
+    "maps_to": [
+      {"section_id": "MWA_1948_S3",  "relevance": "primary"},
+      {"section_id": "MWA_1948_S12", "relevance": "primary"},
+      {"section_id": "MWA_1948_S22", "relevance": "supporting"},
+      {"section_id": "COW_2019_S5",  "relevance": "supporting"},
+      {"section_id": "COW_2019_S6",  "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "overtime",
+    "name": "overtime",
+    "description": "Extra wages payable when a worker works beyond normal working hours",
+    "aliases": [
+      "overtime pay",
+      "overtime wages",
+      "extra hours",
+      "double wages",
+      "working beyond hours"
+    ],
+    "maps_to": [
+      {"section_id": "MWA_1948_S14", "relevance": "primary"},
+      {"section_id": "KSEA_1961_S8", "relevance": "primary"},
+      {"section_id": "COW_2019_S14", "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "lay_off",
+    "name": "lay-off",
+    "description": "Temporary inability of employer to provide work due to shortage of materials, power or other reasons",
+    "aliases": [
+      "layoff",
+      "laid off",
+      "temporary suspension of work",
+      "no work given",
+      "lay off compensation"
+    ],
+    "maps_to": [
+      {"section_id": "IDA_1947_S25C", "relevance": "primary"},
+      {"section_id": "IDA_1947_S25M", "relevance": "primary"},
+      {"section_id": "IDA_1947_S25A", "relevance": "supporting"},
+      {"section_id": "IDA_1947_S25E", "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "salary_delay",
+    "name": "salary delay",
+    "description": "Failure or delay by employer in paying wages within the prescribed time limit",
+    "aliases": [
+      "salary not paid",
+      "wages withheld",
+      "delayed salary",
+      "salary pending",
+      "unpaid wages",
+      "wages not received",
+      "payment of wages"
+    ],
+    "maps_to": [
+      {"section_id": "COW_2019_S17", "relevance": "primary"},
+      {"section_id": "COW_2019_S15", "relevance": "supporting"},
+      {"section_id": "COW_2019_S45", "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "illegal_wage_deduction",
+    "name": "illegal wage deduction",
+    "description": "Unlawful deductions made from an employee's wages by the employer",
+    "aliases": [
+      "salary cut",
+      "deduction from salary",
+      "unauthorised deduction",
+      "illegal deduction",
+      "wages deducted unfairly"
+    ],
+    "maps_to": [
+      {"section_id": "COW_2019_S18", "relevance": "primary"},
+      {"section_id": "COW_2019_S19", "relevance": "supporting"},
+      {"section_id": "COW_2019_S21", "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "bonus",
+    "name": "bonus",
+    "description": "Annual bonus payable to eligible employees based on profits or productivity",
+    "aliases": [
+      "annual bonus",
+      "bonus eligibility",
+      "bonus not paid",
+      "profit sharing",
+      "performance bonus"
+    ],
+    "maps_to": [
+      {"section_id": "COW_2019_S26", "relevance": "primary"},
+      {"section_id": "COW_2019_S29", "relevance": "supporting"},
+      {"section_id": "COW_2019_S31", "relevance": "supporting"},
+      {"section_id": "COW_2019_S39", "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "strike",
+    "name": "strike",
+    "description": "Cessation of work by workers acting in combination as a collective protest",
+    "aliases": [
+      "workers strike",
+      "going on strike",
+      "work stoppage",
+      "industrial action",
+      "illegal strike"
+    ],
+    "maps_to": [
+      {"section_id": "IDA_1947_S22", "relevance": "primary"},
+      {"section_id": "IDA_1947_S23", "relevance": "primary"},
+      {"section_id": "IDA_1947_S24", "relevance": "supporting"},
+      {"section_id": "IDA_1947_S26", "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "lockout",
+    "name": "lock-out",
+    "description": "Temporary closing of a place of employment by the employer as a counter to a dispute",
+    "aliases": [
+      "lockout",
+      "employer lockout",
+      "factory closed by employer",
+      "establishment shut by employer"
+    ],
+    "maps_to": [
+      {"section_id": "IDA_1947_S22", "relevance": "primary"},
+      {"section_id": "IDA_1947_S23", "relevance": "primary"},
+      {"section_id": "IDA_1947_S24", "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "factory_closure",
+    "name": "factory closure",
+    "description": "Permanent closing down of an industrial establishment or undertaking",
+    "aliases": [
+      "company shutdown",
+      "establishment closed",
+      "business closed down",
+      "plant closure",
+      "undertaking closed"
+    ],
+    "maps_to": [
+      {"section_id": "IDA_1947_S25FFA", "relevance": "primary"},
+      {"section_id": "IDA_1947_S25O",   "relevance": "primary"},
+      {"section_id": "IDA_1947_S25FFF", "relevance": "supporting"},
+      {"section_id": "IDA_1947_S25R",   "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "transfer_of_undertaking",
+    "name": "transfer of undertaking",
+    "description": "Change in ownership or management of an establishment — triggers compensation rights for workmen",
+    "aliases": [
+      "company taken over",
+      "business transferred",
+      "change of employer",
+      "merger",
+      "acquisition"
+    ],
+    "maps_to": [
+      {"section_id": "IDA_1947_S25FF", "relevance": "primary"}
+    ]
+  },
+  {
+    "concept_id": "unfair_labour_practice",
+    "name": "unfair labour practice",
+    "description": "Actions by employer or trade union that interfere with workers rights to organise or bargain collectively",
+    "aliases": [
+      "employer victimisation",
+      "anti-union action",
+      "unfair dismissal for union activity",
+      "victimised for union membership"
+    ],
+    "maps_to": [
+      {"section_id": "IDA_1947_S25T", "relevance": "primary"},
+      {"section_id": "IDA_1947_S25U", "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "industrial_dispute",
+    "name": "industrial dispute",
+    "description": "Any dispute or difference between employer and workmen connected with employment, non-employment or conditions of labour",
+    "aliases": [
+      "labour dispute",
+      "employment dispute",
+      "workplace dispute",
+      "employer employee conflict"
+    ],
+    "maps_to": [
+      {"section_id": "IDA_1947_S2",  "relevance": "primary"},
+      {"section_id": "IDA_1947_S2A", "relevance": "primary"},
+      {"section_id": "IDA_1947_S10", "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "working_hours",
+    "name": "working hours",
+    "description": "Maximum daily and weekly hours of work permissible for employees",
+    "aliases": [
+      "hours of work",
+      "daily working hours",
+      "weekly hours",
+      "excess working hours",
+      "made to work extra hours"
+    ],
+    "maps_to": [
+      {"section_id": "KSEA_1961_S7",  "relevance": "primary"},
+      {"section_id": "MWA_1948_S13",  "relevance": "primary"},
+      {"section_id": "COW_2019_S13",  "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "weekly_holiday",
+    "name": "weekly holiday",
+    "description": "Mandatory weekly rest day entitlement for employees",
+    "aliases": [
+      "weekly off",
+      "rest day",
+      "sunday off",
+      "holiday not given",
+      "no weekly holiday"
+    ],
+    "maps_to": [
+      {"section_id": "KSEA_1961_S12", "relevance": "primary"}
+    ]
+  },
+  {
+    "concept_id": "annual_leave",
+    "name": "annual leave",
+    "description": "Paid leave entitlement for employees per year of service",
+    "aliases": [
+      "earned leave",
+      "privilege leave",
+      "annual paid leave",
+      "leave not granted",
+      "leave encashment"
+    ],
+    "maps_to": [
+      {"section_id": "KSEA_1961_S15", "relevance": "primary"},
+      {"section_id": "KSEA_1961_S16", "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "child_labour",
+    "name": "child labour",
+    "description": "Prohibition on employment of children in commercial establishments",
+    "aliases": [
+      "employing children",
+      "minor employed",
+      "child worker"
+    ],
+    "maps_to": [
+      {"section_id": "KSEA_1961_S24", "relevance": "primary"}
+    ]
+  },
+  {
+    "concept_id": "gender_discrimination_wages",
+    "name": "gender discrimination in wages",
+    "description": "Paying different wages to men and women for same or similar work — prohibited under Code on Wages",
+    "aliases": [
+      "wage discrimination",
+      "gender pay gap",
+      "women paid less",
+      "equal pay",
+      "pay discrimination"
+    ],
+    "maps_to": [
+      {"section_id": "COW_2019_S3", "relevance": "primary"},
+      {"section_id": "COW_2019_S4", "relevance": "supporting"}
+    ]
+  },
+  {
+    "concept_id": "re_employment_retrenched",
+    "name": "re-employment of retrenched workmen",
+    "description": "Right of retrenched workmen to be offered re-employment when employer recruits again",
+    "aliases": [
+      "rehire after retrenchment",
+      "right to re-employment",
+      "preference to retrenched workers"
+    ],
+    "maps_to": [
+      {"section_id": "IDA_1947_S25H", "relevance": "primary"}
+    ]
+  },
+  {
+    "concept_id": "conditions_of_service",
+    "name": "conditions of service",
+    "description": "Terms of employment that cannot be changed by employer during pendency of dispute proceedings",
+    "aliases": [
+      "service conditions",
+      "employment terms changed",
+      "employer changed terms",
+      "terms of employment altered"
+    ],
+    "maps_to": [
+      {"section_id": "IDA_1947_S33",  "relevance": "primary"},
+      {"section_id": "IDA_1947_S9A",  "relevance": "supporting"},
+      {"section_id": "IDA_1947_S33A", "relevance": "supporting"}
+    ]
+  }
+]
