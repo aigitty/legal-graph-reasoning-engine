@@ -377,14 +377,13 @@ def get_neighbors(section_id: str) -> List[Dict[str, Any]]:
 
     query = f"""
     MATCH (s:{section_label} {{section_id: $section_id}})
-    CALL {{
+    CALL (s){{
         WITH s
         MATCH (s)-[r]->(neighbor)
         RETURN neighbor, type(r) AS rel_type, 'outgoing' AS direction
 
         UNION
 
-        WITH s
         MATCH (neighbor)-[r]->(s)
         RETURN neighbor, type(r) AS rel_type, 'incoming' AS direction
     }}

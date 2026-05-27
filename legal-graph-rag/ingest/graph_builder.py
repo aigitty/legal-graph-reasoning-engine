@@ -278,6 +278,11 @@ def print_graph_summary(session) -> None:
 
 def main() -> None:
     validate_env()
+    
+    print("\nClearing existing graph data...")
+    with driver.session() as session:
+        session.run("MATCH (n) DETACH DELETE n")
+    print("Graph cleared.")
 
     sections = load_sections()
     relationships = load_relationships()
