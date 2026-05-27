@@ -210,7 +210,7 @@ def _filter_cites_edges(edges: list[dict], valid_section_ids: set[str]) -> list[
     return filtered_edges
 
 
-def traverse(concept_name: str, max_hops: int = 2) -> TraversalResult:
+def traverse(concept_name: str, max_hops: int = 2, max_sections: int = 15) -> TraversalResult:
     """
     Traverse the legal knowledge graph for one plain-language legal concept.
 
@@ -289,11 +289,30 @@ def traverse(concept_name: str, max_hops: int = 2) -> TraversalResult:
         all_sections.append(subgraph_section_by_id.get(section_id, section))
 
     all_sections = _deduplicate_sections(all_sections)
+
     valid_section_ids = {
         section_id
         for section in all_sections
         if (section_id := _section_id(section))
     }
+
+    # Cap total sections passed to agent to prevent context overflow
+    if len(all_sections) > max_sections:
+        # keep all anchors, trim expanded sections
+        all_sections = anchor_sections[:max_sections] + [
+            s for s in expanded_sections
+            if s not in anchor_sections
+        ][:max(0, max_sections - len(anchor_sections))]
+
+        all_sections = _deduplicate_sections(all_sections)
+
+        # IMPORTANT:
+        # recompute valid ids after trimming
+        valid_section_ids = {
+            section_id
+            for section in all_sections
+            if (section_id := _section_id(section))
+        }
 
     cites_edges = _filter_cites_edges(raw_edges, valid_section_ids)
 
