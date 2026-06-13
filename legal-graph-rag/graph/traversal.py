@@ -6,6 +6,7 @@ from typing import Any
 
 from graph.queries import (
     get_sections_for_concept,
+    get_sections_for_exact_concept,
     get_neighbors,
     get_subgraph,
 )
@@ -37,12 +38,17 @@ def _sort_section_key(section: dict) -> tuple[str, str]:
     )
 
 
-def _find_anchors(concept_name: str) -> tuple[list[dict], list[dict], list[str]]:
+def _find_anchors(
+    concept_name: str, exact: bool = False
+) -> tuple[list[dict], list[dict], list[str]]:
     """
     Find primary and supporting section anchors for a concept.
 
     Parameters:
         concept_name: Plain-language legal concept extracted by the agent layer.
+        exact: When True, match the concept by exact canonical name
+               (agent layer already grounded it). When False, use the
+               looser CONTAINS matching (main.py / raw-text callers).
 
     Returns:
         A tuple containing:
@@ -50,7 +56,11 @@ def _find_anchors(concept_name: str) -> tuple[list[dict], list[dict], list[str]]
         - supporting_sections: Section nodes marked as supporting anchors.
         - concepts_matched: Concept names matched in the graph.
     """
-    rows = get_sections_for_concept(concept_name) or []
+    rows = (
+        get_sections_for_exact_concept(concept_name)
+        if exact
+        else get_sections_for_concept(concept_name)
+    ) or []
 
     primary_sections: list[dict] = []
     supporting_sections: list[dict] = []
@@ -210,7 +220,12 @@ def _filter_cites_edges(edges: list[dict], valid_section_ids: set[str]) -> list[
     return filtered_edges
 
 
-def traverse(concept_name: str, max_hops: int = 2, max_sections: int = 15) -> TraversalResult:
+def traverse(
+    concept_name: str,
+    max_hops: int = 2,
+    max_sections: int = 15,
+    exact: bool = False,
+) -> TraversalResult:
     """
     Traverse the legal knowledge graph for one plain-language legal concept.
 
@@ -224,7 +239,9 @@ def traverse(concept_name: str, max_hops: int = 2, max_sections: int = 15) -> Tr
     """
     concept_name = concept_name.strip()
 
-    primary_sections, supporting_sections, concepts_matched = _find_anchors(concept_name)
+    primary_sections, supporting_sections, concepts_matched = _find_anchors(
+        concept_name, exact=exact
+    )
 
     confidence = _score_confidence(
         primary_count=len(primary_sections),

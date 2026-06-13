@@ -500,6 +500,49 @@ def test_connection() -> None:
         print("Neo4j connection failed.")
 
 
+def get_sections_for_exact_concept(concept_name: str) -> List[Dict[str, Any]]:
+    """
+    Like get_sections_for_concept, but matches a concept by its EXACT
+    canonical c.name (case-insensitive equality, not CONTAINS).
+
+    Used by the agent layer, which has already grounded the user's query
+    to canonical Concept.name values via agents/ontology.py. This avoids
+    a second, looser substring re-match inside the database.
+    """
+    driver = get_driver()
+
+    section_label = NodeLabel.SECTION.value
+    concept_label = NodeLabel.CONCEPT.value
+    applies_to_rel = RelType.APPLIES_TO.value
+
+    query = f"""
+    MATCH (s:{section_label})-[r:{applies_to_rel}]->(c:{concept_label})
+    WHERE toLower(c.name) = toLower($concept_name)
+    RETURN
+        s,
+        c.concept_id AS concept_id,
+        c.name AS concept_name,
+        r.relevance AS relevance
+    ORDER BY
+        CASE r.relevance WHEN 'primary' THEN 0 ELSE 1 END,
+        s.act_id,
+        s.section_number
+    """
+
+    with driver.session() as session:
+        records = list(session.run(query, concept_name=concept_name))
+
+    return [
+        {
+            "section": dict(record["s"]),
+            "concept_id": record["concept_id"],
+            "concept_name": record["concept_name"],
+            "relevance": record["relevance"],
+        }
+        for record in records
+    ]
+    
+
 if __name__ == "__main__":
     test_connection()
     print("queries.py loaded successfully.")
