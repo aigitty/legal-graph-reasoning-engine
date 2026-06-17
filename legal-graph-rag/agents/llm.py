@@ -38,24 +38,45 @@ warnings.filterwarnings("ignore", message=r"The class `ChatVertexAI` was depreca
 
 from langchain_google_vertexai import ChatVertexAI
 
-DEFAULT_MODEL = "gemini-2.5-flash"
+from config import cfg
+
+DEFAULT_MODEL = cfg.GEMINI_MODEL
 
 
 def get_llm(
     model: str = DEFAULT_MODEL,
     temperature: float = 0.0,
     max_output_tokens: int = 1024,
+    thinking_budget: int | None = None,
 ) -> ChatVertexAI:
-    project = os.environ["GOOGLE_CLOUD_PROJECT"]
-    location = os.environ.get("GOOGLE_CLOUD_LOCATION", "us-central1")
+    """
+    thinking_budget: optional, Gemini 2.5 "thinking" token budget. Left
+    unset (None) by default -> existing callers (extraction_node,
+    sufficiency_node) get exactly the same ChatVertexAI as before.
 
-    return ChatVertexAI(
+    Pass 0 to disable extended thinking entirely. On Gemini 2.5 models,
+    thinking tokens are drawn from the same max_output_tokens budget as the
+    visible response, and the thinking budget is dynamic by default — for
+    tasks that don't need multi-step reasoning (e.g. answer synthesis, which
+    is mostly constrained transformation + formatting), this can silently
+    eat most of max_output_tokens and truncate the visible answer. Setting
+    thinking_budget=0 makes the remaining budget fully available to the
+    visible output.
+    """
+    project = cfg.GOOGLE_CLOUD_PROJECT or os.environ["GOOGLE_CLOUD_PROJECT"]
+    location = cfg.GOOGLE_CLOUD_LOCATION
+
+    kwargs: dict = dict(
         model=model,
         project=project,
         location=location,
         temperature=temperature,
         max_output_tokens=max_output_tokens,
     )
+    if thinking_budget is not None:
+        kwargs["thinking_budget"] = thinking_budget
+
+    return ChatVertexAI(**kwargs)
 
 
 if __name__ == "__main__":

@@ -22,16 +22,20 @@ from agents.graph_state import LegalQueryState
 from agents.llm import get_llm
 from agents.schemas import SufficiencyVerdict
 from agents.state import SectionContext
+from config import cfg
 
 logger = logging.getLogger(__name__)
 
-MAX_ITERATIONS = 2
-PREVIEW_CHARS = 200
+MAX_ITERATIONS = cfg.MAX_RETRIEVAL_ITERATIONS
+PREVIEW_CHARS = cfg.SUFFICIENCY_PREVIEW_CHARS
 
 PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "sufficiency.txt"
 SYSTEM_PROMPT = PROMPT_PATH.read_text(encoding="utf-8")
 
-_SUFFICIENCY_LLM = get_llm(temperature=0.0).with_structured_output(SufficiencyVerdict)
+_SUFFICIENCY_LLM = get_llm(
+    temperature=cfg.SUFFICIENCY_TEMPERATURE,
+    max_output_tokens=cfg.SUFFICIENCY_MAX_TOKENS,
+).with_structured_output(SufficiencyVerdict)
 
 
 def _summarize_section(section: SectionContext) -> str:

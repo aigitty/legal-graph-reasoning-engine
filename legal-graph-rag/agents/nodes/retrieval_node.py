@@ -3,19 +3,13 @@ agents/nodes/retrieval_node.py
 
 Deterministic graph retrieval node.
 
-Loops over state.grounded_concepts, calls the existing graph.traversal.traverse()
-once per concept, and merges the results:
-  - sections deduplicated by section_id
-  - relevance ("primary"/"supporting") assigned from concept_map.json via
-    agents.ontology.relevance_for()
-  - CITES edges deduplicated
-  - acts_covered as a union
+Loops over state.grounded_concepts, calls graph.traversal.traverse() with
+exact=True (canonical concept names from grounding) once per concept, and
+merges the results: dedup sections by section_id, relevance from
+agents.ontology.relevance_for(), dedup CITES edges, union acts_covered.
 
-Falls back to raw_query directly if grounding produced no matches, mirroring
-main.py's behavior of handing traverse() the raw text and letting it return
-an empty result safely if nothing matches.
-
-Still fully DETERMINISTIC: no LLM, no invented sections.
+max_hops comes from state (default 2, mutated by graph_expansion_node on
+the sufficiency loop). Still fully DETERMINISTIC: no LLM, no invented sections.
 """
 
 from __future__ import annotations
@@ -27,11 +21,11 @@ from graph.traversal import traverse
 from agents.state import RetrievalResult, SectionContext
 from agents.graph_state import LegalQueryState
 from agents.ontology import relevance_for
+from config import cfg
 
 logger = logging.getLogger(__name__)
 
-MAX_HOPS = 2
-MAX_SECTIONS = 15
+MAX_SECTIONS = cfg.MAX_SECTIONS
 
 
 def _normalize_edge(edge: dict[str, Any]) -> dict[str, str]:
@@ -63,7 +57,12 @@ def graph_traversal_node(state: LegalQueryState) -> dict[str, Any]:
 
     for concept in concepts:
         try:
-            tr = traverse(concept_name=concept, max_hops=MAX_HOPS, max_sections=MAX_SECTIONS,exact=True)
+            tr = traverse(
+                concept_name=concept,
+                max_hops=state.max_hops,
+                max_sections=MAX_SECTIONS,
+                exact=True,
+            )
         except Exception as exc:
             logger.exception("Graph traversal failed for concept %r", concept)
             return {"error": f"Graph traversal failed for {concept!r}: {exc}"}

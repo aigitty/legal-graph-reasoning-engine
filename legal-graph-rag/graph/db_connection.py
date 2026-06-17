@@ -1,29 +1,19 @@
-import os
 from neo4j import GraphDatabase
-from dotenv import load_dotenv
+
+from config import cfg
 
 
-load_dotenv()
-
-
-NEO4J_URI = os.getenv("NEO4J_URI")
-NEO4J_USERNAME = os.getenv("NEO4J_USERNAME")
-NEO4J_PASSWORD = os.getenv("NEO4J_PASSWORD")
-
-
-if not NEO4J_URI:
+if not cfg.NEO4J_URI:
     raise ValueError("NEO4J_URI is missing in .env")
-
-if not NEO4J_USERNAME:
+if not cfg.NEO4J_USERNAME:
     raise ValueError("NEO4J_USERNAME is missing in .env")
-
-if not NEO4J_PASSWORD:
+if not cfg.NEO4J_PASSWORD:
     raise ValueError("NEO4J_PASSWORD is missing in .env")
 
 
 driver = GraphDatabase.driver(
-    NEO4J_URI,
-    auth=(NEO4J_USERNAME, NEO4J_PASSWORD)
+    cfg.NEO4J_URI,
+    auth=(cfg.NEO4J_USERNAME, cfg.NEO4J_PASSWORD),
 )
 
 

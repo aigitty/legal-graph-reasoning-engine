@@ -16,6 +16,7 @@ from pathlib import Path
 from agents.graph_state import LegalQueryState
 from agents.llm import get_llm
 from agents.schemas import ExtractionResult
+from config import cfg
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +25,10 @@ SYSTEM_PROMPT = PROMPT_PATH.read_text(encoding="utf-8")
 
 # Built once at import time. Requires .env already loaded (graph_agent.py
 # calls load_dotenv() before importing nodes).
-_EXTRACTION_LLM = get_llm(temperature=0.0).with_structured_output(ExtractionResult)
+_EXTRACTION_LLM = get_llm(
+    temperature=cfg.EXTRACTION_TEMPERATURE,
+    max_output_tokens=cfg.EXTRACTION_MAX_TOKENS,
+).with_structured_output(ExtractionResult)
 
 
 def entity_extraction_node(state: LegalQueryState) -> dict:
