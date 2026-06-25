@@ -103,8 +103,10 @@ When you run `python graph_agent.py`:
 state machine. Happens once.
 
 **3. The `if __name__ == "__main__":` block (bottom):** runs only when the file
-is executed directly. It calls `run(...)` three times with hardcoded queries and
-prints each via `_print_result`.
+is executed directly. It runs an interactive prompt loop: it prompts
+`Enter your legal query:`, passes whatever you type to `run(...)`, prints the
+result via `_print_result`, and loops. Blank input is re-prompted; `exit`/`quit`
+(or Ctrl-C / Ctrl-D) ends the session.
 
 **4. `run(raw_query)`:** processes one query:
 ```python

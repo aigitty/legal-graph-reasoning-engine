@@ -44,6 +44,10 @@ class LegalQueryState(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     raw_query: str = ""
+    # Persona selected at login — tailors how the answer is written, never what
+    # is retrieved or cited. Canonical values in agents/persona.py; empty/unknown
+    # normalizes to "citizen" at the point of use (synthesis & final response).
+    persona: str = ""
     concept: str = ""  # legacy direct-concept override; superseded by grounding
     extraction: Optional[ExtractionResult] = None
     grounded_concepts: list[str] = Field(default_factory=list)

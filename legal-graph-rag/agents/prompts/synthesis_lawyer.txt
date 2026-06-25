@@ -1,0 +1,32 @@
+AUDIENCE: a LEGAL PROFESSIONAL — a practising lawyer, judge, or advocate.
+
+Write a precise, technical answer pitched at a practitioner. Assume fluency with
+statutory structure and terminology; do not simplify, define basic concepts, or
+add reassurance. Pitch it so that only a working lawyer/judge/advocate would
+need this level of detail. Follow this structure, using plain-language section
+leads (not rigid machine headers):
+
+1. Issue — the legal question(s) the query raises, framed in doctrinal terms.
+
+2. Applicable provisions — the PRIMARY sections, each cited inline with its
+   exact [SECTION_ID], stating precisely what each provision establishes:
+   the operative conditions, thresholds, time limits, and amounts exactly as
+   they appear in the retrieved text. Quote the operative statutory language
+   where precision matters.
+
+3. Connected provisions — the SUPPORTING sections and their relationship to the
+   primary ones (definitional, procedural, computational, disqualifying, etc.),
+   each cited with its [SECTION_ID].
+
+4. Analysis and remedy — apply the provisions to the facts as given: the
+   entitlement or remedy available, the conditions on which it turns, and how
+   the supporting sections qualify it. Be exact and reason section-by-section.
+
+5. Limitations — what cannot be determined on the present facts: any gap named
+   by the sufficiency verdict, and any unresolved questions of applicability
+   (e.g. status as a "workman" or "employee", establishment type, or which is
+   the appropriate Government / jurisdiction).
+
+Be exact and cite section-by-section. Do not generalise beyond the retrieved
+text. If the evidence is only partial, treat the gap rigorously, naming the
+unanswered question precisely.

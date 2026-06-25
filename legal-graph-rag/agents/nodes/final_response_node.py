@@ -34,6 +34,7 @@ import logging
 import re
 
 from agents.graph_state import LegalQueryState
+from agents.persona import LAWYER, normalize_persona
 
 logger = logging.getLogger(__name__)
 
@@ -97,26 +98,44 @@ def _strip_unverified_markers(text: str, verified: set[str]) -> str:
     return re.sub(r"[ \t]{2,}", " ", cleaned).strip()
 
 
-def _confidence_line(state: LegalQueryState) -> str:
-    f = state.confidence_factors or {}
-    if f:
-        breakdown = (
-            f"concept_coverage {f.get('concept_coverage', 0.0):.2f}"
-            f" · seed_strength {f.get('seed_strength', 0.0):.2f}"
-            f" · sufficiency {f.get('sufficiency_score', 0.0):.2f}"
-            f" · citation_validity {f.get('citation_validity', 0.0):.2f}"
-        )
-        return f"Confidence: {state.confidence:.2f}  ({breakdown})"
-    return f"Confidence: {state.confidence:.2f}"
+def _confidence_word(score: float) -> str:
+    # Plain-language band for the citizen trailer (thresholds mirror the
+    # MIN_CONFIDENCE downgrade in the output guardrail).
+    if score >= 0.7:
+        return "high"
+    if score >= 0.4:
+        return "moderate"
+    return "low"
 
 
-def _citations_line(verified: list[str]) -> str:
+def _confidence_line(state: LegalQueryState, persona: str) -> str:
+    if persona == LAWYER:
+        f = state.confidence_factors or {}
+        if f:
+            breakdown = (
+                f"concept_coverage {f.get('concept_coverage', 0.0):.2f}"
+                f" · seed_strength {f.get('seed_strength', 0.0):.2f}"
+                f" · sufficiency {f.get('sufficiency_score', 0.0):.2f}"
+                f" · citation_validity {f.get('citation_validity', 0.0):.2f}"
+            )
+            return f"Confidence: {state.confidence:.2f}  ({breakdown})"
+        return f"Confidence: {state.confidence:.2f}"
+    # Citizen: no numeric jargon or factor breakdown.
+    return f"How confident is this answer: {_confidence_word(state.confidence)}."
+
+
+def _citations_line(verified: list[str], persona: str) -> str:
+    if persona == LAWYER:
+        if verified:
+            return "Verified citations: " + ", ".join(verified)
+        return "Verified citations: none"
+    # Citizen: friendlier label, plain wording when nothing was confirmed.
     if verified:
-        return "Verified citations: " + ", ".join(verified)
-    return "Verified citations: none"
+        return "The law behind this answer: " + ", ".join(verified)
+    return "No specific sections could be confirmed for your question."
 
 
-def _format_answer(state: LegalQueryState, partial: bool) -> str:
+def _format_answer(state: LegalQueryState, partial: bool, persona: str) -> str:
     verified = state.verified_section_ids or []
     body = _strip_unverified_markers(state.draft_answer or "", set(verified))
     if not body:
@@ -130,16 +149,22 @@ def _format_answer(state: LegalQueryState, partial: bool) -> str:
         gap = ""
         if state.sufficiency is not None and state.sufficiency.missing:
             gap = f" The retrieved law does not fully cover: {state.sufficiency.missing}."
-        parts.append(
-            "PARTIAL ANSWER — the retrieved sections only partially address this "
-            "query." + gap
-        )
+        if persona == LAWYER:
+            parts.append(
+                "PARTIAL ANSWER — the retrieved sections only partially address "
+                "this query." + gap
+            )
+        else:
+            parts.append(
+                "A heads-up: the law found here only partially answers your "
+                "question." + gap
+            )
         parts.append("")
 
     parts.append(body)
     parts.append("")
-    parts.append(_citations_line(verified))
-    parts.append(_confidence_line(state))
+    parts.append(_citations_line(verified, persona))
+    parts.append(_confidence_line(state, persona))
     if state.disclaimer:
         parts.append("")
         parts.append(state.disclaimer)
@@ -182,6 +207,7 @@ def _format_error(state: LegalQueryState) -> str:
 def final_response_node(state: LegalQueryState) -> dict:
     try:
         status = _resolve_status(state)
+        persona = normalize_persona(state.persona)
 
         if status == "error":
             final_answer = _format_error(state)
@@ -190,9 +216,9 @@ def final_response_node(state: LegalQueryState) -> dict:
         elif status == "out_of_domain":
             final_answer = _format_out_of_domain(state)
         elif status == "insufficient_evidence":
-            final_answer = _format_answer(state, partial=True)
+            final_answer = _format_answer(state, partial=True, persona=persona)
         else:  # "ok"
-            final_answer = _format_answer(state, partial=False)
+            final_answer = _format_answer(state, partial=False, persona=persona)
 
         return {"status": status, "final_answer": final_answer}
 

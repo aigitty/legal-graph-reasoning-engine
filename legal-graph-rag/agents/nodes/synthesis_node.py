@@ -34,13 +34,27 @@ from pathlib import Path
 
 from agents.graph_state import LegalQueryState
 from agents.llm import get_llm
+from agents.persona import CITIZEN, LAWYER, normalize_persona
 from agents.state import SectionContext
 from config import cfg
 
 logger = logging.getLogger(__name__)
 
-PROMPT_PATH = Path(__file__).resolve().parent.parent / "prompts" / "synthesis.txt"
-SYSTEM_PROMPT = PROMPT_PATH.read_text(encoding="utf-8")
+# Persona-aware synthesis prompt. The integrity-critical rules live ONCE in the
+# shared base prompt (so they can never drift between personas); each persona
+# file only specifies tone, technical depth, and structure. The system prompt
+# for a call is base + the selected persona block.
+_PROMPT_DIR = Path(__file__).resolve().parent.parent / "prompts"
+_BASE_PROMPT = (_PROMPT_DIR / "synthesis_base.txt").read_text(encoding="utf-8")
+_PERSONA_PROMPTS = {
+    CITIZEN: (_PROMPT_DIR / "synthesis_citizen.txt").read_text(encoding="utf-8"),
+    LAWYER: (_PROMPT_DIR / "synthesis_lawyer.txt").read_text(encoding="utf-8"),
+}
+
+
+def _system_prompt(persona: str) -> str:
+    block = _PERSONA_PROMPTS.get(persona, _PERSONA_PROMPTS[CITIZEN])
+    return f"{_BASE_PROMPT.rstrip()}\n\n{block.lstrip()}"
 
 # Free text (no structured output). Slightly warmer than the structured calls
 # (architecture section 9: synthesis temp 0.2), with a larger token budget
@@ -145,7 +159,11 @@ def answer_synthesis_node(state: LegalQueryState) -> dict:
     if state.retrieval is None or not state.retrieval.sections:
         return {"draft_answer": _NO_EVIDENCE_ANSWER, "cited_section_ids": []}
 
-    messages = [("system", SYSTEM_PROMPT), ("human", _build_human_message(state))]
+    persona = normalize_persona(state.persona)
+    messages = [
+        ("system", _system_prompt(persona)),
+        ("human", _build_human_message(state)),
+    ]
 
     last_exc: Exception | None = None
     for attempt in (1, 2):

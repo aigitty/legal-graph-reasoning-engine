@@ -73,8 +73,6 @@ legal-graph-rag/
 │   ├── queries.py          # all Cypher (the only place raw Cypher lives)
 │   └── traversal.py        # deterministic BFS traversal
 │
-├── guardrails/             # VESTIGIAL — empty placeholders, superseded (see §5). Slated for removal.
-│
 ├── ingest/                 # COMPLETE — DO NOT MODIFY
 │   ├── pdf_parser.py
 │   ├── graph_builder.py
@@ -117,7 +115,7 @@ extraction → grounding → traversal → sufficiency → [conditional]
 - `tests/` — unit (confidence formula, citation stripping, grounding, node contracts) + integration (the §8 standing queries against real Neo4j).
 - LangSmith tracing setup (config keys already present; wiring pending).
 - `graph/retrieval.py` — optional refactor of `traversal.py` into parameterized `retrieve()` + `verify_sections()`.
-- Remove the vestigial `guardrails/` folder + drop unused `nemoguardrails` from `requirements.txt` (input/output guardrail logic now lives in the pipeline nodes above; NeMo was never wired in).
+- Clean up `requirements.txt`: it still lists `groq`, `langchain-groq`, and `nemoguardrails`, none of which the runtime uses — the LLM layer is `langchain-google-vertexai` (`ChatVertexAI`, which must be pinned `<4.0.0`; see `agents/llm.py`) and the input/output guardrail logic lives in the pipeline nodes above (NeMo was never wired in). *(The vestigial `guardrails/` folder has already been removed.)*
 
 ---
 
@@ -154,7 +152,7 @@ Degrade honestly rather than block. A stripped-citation answer with a warning an
 # CLI traversal tester (no LLM)
 python main.py
 
-# Agent workflow end-to-end
+# Agent workflow end-to-end (interactive — prompts "Enter your legal query:")
 python graph_agent.py
 
 # Offline grounding check (no Neo4j/network)

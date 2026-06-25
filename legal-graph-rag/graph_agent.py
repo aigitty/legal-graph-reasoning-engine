@@ -37,6 +37,7 @@ load_dotenv()
 from langgraph.graph import StateGraph, START, END
 
 from agents.graph_state import LegalQueryState
+from agents.persona import CITIZEN, LAWYER, match_persona, normalize_persona
 from agents.nodes.extraction_node import entity_extraction_node
 from agents.nodes.grounding_node import concept_grounding_node
 from agents.nodes.retrieval_node import graph_traversal_node
@@ -90,9 +91,12 @@ def build_graph():
 GRAPH = build_graph()
 
 
-def run(raw_query: str) -> LegalQueryState:
+def run(raw_query: str, persona: str | None = None) -> LegalQueryState:
     out = GRAPH.invoke(
-        {"raw_query": raw_query},
+        {
+            "raw_query": raw_query,
+            "persona": normalize_persona(persona if persona is not None else cfg.DEFAULT_PERSONA),
+        },
         config={"recursion_limit": cfg.LANGGRAPH_RECURSION_LIMIT},
     )
     if isinstance(out, LegalQueryState):
@@ -104,6 +108,8 @@ def _print_result(label: str, state: LegalQueryState) -> None:
     print("=" * 80)
     print(f"QUERY: {label}")
     print("=" * 80)
+
+    print(f"Persona:          {state.persona or '(default)'}")
 
     if state.extraction:
         e = state.extraction
@@ -145,8 +151,32 @@ def _print_result(label: str, state: LegalQueryState) -> None:
     print()
 
 
+def _choose_persona() -> str:
+    """Login step: pick the persona the answers are tailored for."""
+    print("Log in as:")
+    print("  [1] Normal Citizen           (plain-language, reassuring answers)")
+    print("  [2] Lawyer / Judge / Advocate (technical, section-by-section answers)")
+    while True:
+        try:
+            choice = input("Select 1 or 2 [1]: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            print()
+            return CITIZEN
+        if choice in {"", "1"}:
+            return CITIZEN
+        if choice == "2":
+            return LAWYER
+        # Also accept typed labels (citizen / lawyer / judge / advocate).
+        matched = match_persona(choice)
+        if matched:
+            return matched
+        print("Please enter 1 or 2.")
+
+
 if __name__ == "__main__":
     print("Legal Graph RAG — Indian employment law reasoning engine")
+    persona = _choose_persona()
+    print(f"\nLogged in as: {persona}.")
     print("Type your question, or 'exit'/'quit' to leave.\n")
     while True:
         try:
@@ -162,4 +192,4 @@ if __name__ == "__main__":
             print("Please enter a query (or type 'exit' to quit).\n")
             continue
 
-        _print_result(raw_query, run(raw_query))
+        _print_result(raw_query, run(raw_query, persona))

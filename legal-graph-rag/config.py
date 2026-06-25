@@ -128,6 +128,16 @@ class Settings(BaseSettings):
     # "insufficient_evidence".
     MIN_CONFIDENCE: float = 0.4
 
+    # ------------------------------------------------------------------ #
+    # Persona-aware output                                                 #
+    #                                                                      #
+    # Selected at login; tailors ONLY how the answer is written, never    #
+    # what is retrieved or cited. Canonical values live in                #
+    # agents/persona.py ("citizen" | "lawyer"). "citizen" is the safer    #
+    # default (see agents/persona.normalize_persona).                     #
+    # ------------------------------------------------------------------ #
+    DEFAULT_PERSONA: str = "citizen"
+
 
 # Module-level singleton — import this everywhere.
 cfg = Settings()
