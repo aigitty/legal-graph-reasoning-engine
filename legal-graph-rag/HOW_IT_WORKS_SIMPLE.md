@@ -51,8 +51,13 @@ The other five are **plain code** — no AI, just rules and database lookups.
 
 This is the **front door**. When you run `python graph_agent.py`, this file:
 
-1. **Builds the assembly line** (connects the 8 stations in order) — done once.
-2. **Drops your question onto the belt** with `run("...your question...")`.
+1. **Asks who you are** (a quick login): `[1] Normal Citizen` or
+   `[2] Lawyer / Judge / Advocate`. This choice — the **persona** — rides along
+   with your question and decides *how the final answer is written* (plain and
+   reassuring for a citizen; technical and section-by-section for a lawyer). It
+   never changes *which* law is found — only the wording at the end.
+2. **Builds the assembly line** (connects the 8 stations in order) — done once.
+3. **Drops your question onto the belt** with `run("...your question...", persona)`.
 
 ```
    You type:  python graph_agent.py
@@ -72,7 +77,8 @@ a form that starts blank and gets filled in box by box as it moves down the line
    THE CLIPBOARD (LegalQueryState) — starts almost empty:
 
    ┌─────────────────────────────────────────┐
-   │ raw_query:  "I was fired without notice…" │ ← only this is filled at start
+   │ raw_query:  "I was fired without notice…" │ ← filled at start
+   │ persona:    "citizen" / "lawyer"          │ ← also filled at start (login)
    │ extraction:        (empty)                │
    │ grounded_concepts: (empty)                │
    │ retrieval:         (empty)                │
@@ -300,6 +306,13 @@ it was handed. (There's also a shortcut here: if Station 3 found *nothing*, this
 station skips the AI entirely and just says "no relevant law found" — saving a
 wasted AI call.)
 
+**This is where the persona matters.** The instructions handed to the AI come in
+two parts: a shared rulebook (`synthesis_base.txt` — "only use these sections,
+always tag them") that is *identical* for everyone, plus a style sheet picked from
+your login: `synthesis_citizen.txt` (warm, plain language, "here's what this means
+for you and what to do next") or `synthesis_lawyer.txt` (technical, structured,
+section-by-section). Same law, same citations — just written for the right reader.
+
 ➡️ Passes to Station 7.
 
 ---
@@ -368,6 +381,11 @@ wins over a polished answer.
 It also strips any leftover `[SECTION_ID]` tags that weren't verified, so the final
 text only references checked sections.
 
+The little summary at the bottom of the answer is also tailored to your login: a
+**lawyer** sees `Verified citations: …` and the raw confidence number with its
+factor breakdown; a **citizen** sees a friendlier `The law behind this answer: …`
+and a plain `How confident is this answer: high/moderate/low.` — no jargon.
+
 ```
    OUT:  final_answer = the complete, formatted text the person sees
 ```
@@ -433,8 +451,9 @@ text only references checked sections.
 
 | Station | File | AI? | One-line job |
 |---|---|---|---|
-| Front door | `graph_agent.py` | – | Build the line, run the question |
+| Front door | `graph_agent.py` | – | Login (persona), build the line, run the question |
 | The clipboard | `agents/graph_state.py` | – | The form that travels station to station |
+| Persona | `agents/persona.py` | – | "citizen" vs "lawyer" — who the answer is written for |
 | 1 | `agents/nodes/extraction_node.py` | ✅ | Understand the question |
 | 2 | `agents/nodes/grounding_node.py` | – | Match to 25 official concepts |
 | 3 | `agents/nodes/retrieval_node.py` | – | Pull law from the database |

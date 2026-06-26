@@ -36,7 +36,8 @@ These encode the project's core design. Violating them defeats the purpose of th
 4. **Loop termination is never decided by the LLM.** Hard limits (`MAX_ITERATIONS`, `MAX_HOPS`) are enforced in deterministic code BEFORE any LLM call.
 5. **Every citation must be verified against Neo4j** before reaching the user, AND must have been in the retrieval set (the LLM may only cite what it was shown).
 6. **No raw dictionaries between agents.** Use the typed contracts in `agents/state.py` and `agents/graph_state.py`.
-7. **Prompts live as files** in `agents/prompts/`, never as inline strings.
+7. **Prompts live as files** in `agents/prompts/`, never as inline strings. The synthesis system prompt is **composed** from `synthesis_base.txt` (the shared, integrity-critical rules — kept in ONE place so they can never drift) plus a persona overlay (`synthesis_citizen.txt` or `synthesis_lawyer.txt`); both halves are files.
+8. **Persona tailors presentation only, never substance.** The selected persona changes the synthesis tone/technicality/structure and the final-response trailer — it NEVER changes what is retrieved, verified, or allowed to be cited, and it does NOT add an LLM call (rule 1 still holds: exactly three).
 
 ---
 
@@ -56,6 +57,7 @@ legal-graph-rag/
 │   ├── schemas.py          # Pydantic schemas for structured LLM output
 │   ├── llm.py              # ChatVertexAI factory (reads model/GCP from config)
 │   ├── ontology.py         # deterministic concept grounding (loads concept_map.json)
+│   ├── persona.py          # persona vocabulary ("citizen" | "lawyer") + normalize/match helpers
 │   ├── nodes/              # one file per LangGraph node
 │   │   ├── extraction_node.py        # LLM call 1
 │   │   ├── grounding_node.py         # deterministic
@@ -65,7 +67,9 @@ legal-graph-rag/
 │   │   ├── synthesis_node.py         # LLM call 3
 │   │   ├── output_guardrail_node.py  # deterministic — citation verify + confidence + disclaimer
 │   │   └── final_response_node.py    # deterministic — assembles final_answer for every exit path
-│   └── prompts/            # extraction.txt, sufficiency.txt, synthesis.txt
+│   └── prompts/            # extraction.txt, sufficiency.txt,
+│                           #   synthesis_base.txt (shared integrity rules) +
+│                           #   synthesis_citizen.txt / synthesis_lawyer.txt (persona overlays)
 │
 ├── graph/                  # Neo4j access — DO NOT add LLM logic here
 │   ├── schema.py           # node/relationship definitions (single source of truth)
@@ -102,9 +106,9 @@ extraction → grounding → traversal → sufficiency → [conditional]
 - Ingestion layer (`ingest/`) — graph is populated: 5 Acts, 255 Sections, 127 CITES, 25 Concepts, 75 APPLIES_TO.
 - Graph layer (`graph/`) — schema, queries, deterministic traversal.
 - Full agent pipeline, all three LLM calls + both deterministic guardrail nodes:
-  - `synthesis_node` (LLM call 3) — verified working; cites only evidence-pack section_ids, short-circuits the empty-retrieval path with no LLM call.
+  - `synthesis_node` (LLM call 3) — verified working; cites only evidence-pack section_ids, short-circuits the empty-retrieval path with no LLM call. **Persona-aware:** the system prompt is `synthesis_base.txt` + the selected persona overlay (citizen = plain-language/reassuring; lawyer = technical/section-by-section).
   - `output_guardrail_node` — verifies every citation against BOTH the retrieval set (provenance) AND Neo4j (existence), strips failures with a warning, computes the deterministic confidence score (§6), downgrades to `insufficient_evidence` below `MIN_CONFIDENCE`, and injects the disclaimer in code. Degrades honestly if Neo4j is unreachable (provenance-only + warning).
-  - `final_response_node` — pure formatting (NO LLM, NO Neo4j), assembles `final_answer` for all five terminal statuses with safety precedence (see §6); strips unverified inline `[SECTION_ID]` markers; wrapped so it never raises.
+  - `final_response_node` — pure formatting (NO LLM, NO Neo4j), assembles `final_answer` for all five terminal statuses with safety precedence (see §6); strips unverified inline `[SECTION_ID]` markers; wrapped so it never raises. **Persona-aware trailer:** lawyer gets "Verified citations:" + the numeric confidence factor breakdown; citizen gets a plain "The law behind this answer: …" line and a worded confidence band (high/moderate/low) with no jargon.
 - `config.py` — pydantic-settings is the single source of all runtime config (model, per-call temps/token budgets, all hard limits, confidence weights, Neo4j creds, GCP project/location). Every former hardcoded constant now reads from here; override any value via an env var of the same name.
 
 **Verified terminal statuses:** `ok`, `insufficient_evidence`, `out_of_domain`, `rejected`, `error` — all exercised (live + offline) and producing correct output.
@@ -121,7 +125,8 @@ extraction → grounding → traversal → sufficiency → [conditional]
 
 ## 6. Key architectural facts
 
-- **State:** `LegalQueryState` (Pydantic) flows through every node; each node returns a partial dict update. Step-7 fields: `verified_section_ids`, `confidence`, `confidence_factors`, `status`, `disclaimer`, `final_answer`.
+- **State:** `LegalQueryState` (Pydantic) flows through every node; each node returns a partial dict update. Step-7 fields: `verified_section_ids`, `confidence`, `confidence_factors`, `status`, `disclaimer`, `final_answer`. Also carries `persona` (selected at login; empty normalizes to `"citizen"`).
+- **Persona-aware output:** the persona (canonical `"citizen"` | `"lawyer"`, resolved by `agents/persona.py`; Lawyer/Judge/Advocate all map to `"lawyer"`) is set on the initial state. `run(raw_query, persona=None)` threads it in (default from `cfg.DEFAULT_PERSONA`); the CLI prompts for it once at login. It is consumed only by `synthesis_node` (prompt selection) and `final_response_node` (trailer). All integrity guarantees hold identically for both personas.
 - **All tunable constants live in `config.py`** (`from config import cfg`). Do NOT reintroduce hardcoded models/temps/limits in node files — add a field to `config.py` instead.
 - **Confidence formula (deterministic, implemented in `output_guardrail_node`):**
   `confidence = 0.35·concept_coverage + 0.25·seed_strength + 0.20·sufficiency_score + 0.20·citation_validity`
@@ -152,7 +157,8 @@ Degrade honestly rather than block. A stripped-citation answer with a warning an
 # CLI traversal tester (no LLM)
 python main.py
 
-# Agent workflow end-to-end (interactive — prompts "Enter your legal query:")
+# Agent workflow end-to-end (interactive — first prompts for a persona/login
+#   [1] Normal Citizen / [2] Lawyer-Judge-Advocate, then "Enter your legal query:")
 python graph_agent.py
 
 # Offline grounding check (no Neo4j/network)

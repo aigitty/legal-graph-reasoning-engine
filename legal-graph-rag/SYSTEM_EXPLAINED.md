@@ -103,21 +103,26 @@ When you run `python graph_agent.py`:
 state machine. Happens once.
 
 **3. The `if __name__ == "__main__":` block (bottom):** runs only when the file
-is executed directly. It runs an interactive prompt loop: it prompts
-`Enter your legal query:`, passes whatever you type to `run(...)`, prints the
+is executed directly. It first runs a **login step** (`_choose_persona()`) that
+asks who you are — `[1] Normal Citizen` or `[2] Lawyer / Judge / Advocate` —
+then runs an interactive prompt loop: it prompts `Enter your legal query:`,
+passes whatever you type (plus the chosen persona) to `run(...)`, prints the
 result via `_print_result`, and loops. Blank input is re-prompted; `exit`/`quit`
 (or Ctrl-C / Ctrl-D) ends the session.
 
-**4. `run(raw_query)`:** processes one query:
+**4. `run(raw_query, persona=None)`:** processes one query:
 ```python
 out = GRAPH.invoke(
-    {"raw_query": raw_query},
+    {"raw_query": raw_query, "persona": normalize_persona(persona or cfg.DEFAULT_PERSONA)},
     config={"recursion_limit": cfg.LANGGRAPH_RECURSION_LIMIT},
 )
 ```
-`GRAPH.invoke({"raw_query": ...})` is where the pipeline starts. You hand it a
-dict with just the raw query; LangGraph wraps it into a fresh `LegalQueryState`
-(all other fields take defaults) and pushes it from `START` into the first node.
+`GRAPH.invoke({"raw_query": ..., "persona": ...})` is where the pipeline starts.
+You hand it a dict with the raw query and the persona; LangGraph wraps it into a
+fresh `LegalQueryState` (all other fields take defaults) and pushes it from
+`START` into the first node. The persona is carried untouched through the whole
+pipeline and only consulted at synthesis and final-response time — it changes how
+the answer reads, never what is retrieved or cited.
 
 **Sequence:** load env -> build LLM clients + open Neo4j -> compile graph ->
 invoke graph per query.
@@ -264,9 +269,17 @@ default.
 - **Otherwise:** builds an **evidence pack** (`_build_human_message`) — full text
   of every retrieved section, each prefixed with `[SECTION_ID]`, plus extracted
   details and the sufficiency verdict — and calls `_SYNTHESIS_LLM` (one retry).
-  The prompt (`prompts/synthesis.txt`) orders the structure (concepts ->
-  applicable sections -> connected sections -> remedies -> limitations) and
-  forbids citing outside the pack.
+- **Persona-aware system prompt:** the prompt is *composed* — `synthesis_base.txt`
+  (the shared, integrity-critical rules: cite only the evidence pack, mandatory
+  `[SECTION_ID]` markers, no invented law, partial-answer handling) **plus** a
+  persona overlay chosen from `state.persona`:
+  - `synthesis_citizen.txt` — console the user, name the law in plain terms,
+    explain simply, say what they can do next (no legalese);
+  - `synthesis_lawyer.txt` — technical Issue → Applicable provisions → Connected
+    provisions → Analysis/remedy → Limitations, cited section-by-section.
+  Keeping the rules in the single shared base file means they can never drift
+  between personas. The base forbids citing outside the pack and orders the
+  structure; the overlay only sets tone, depth, and shape.
 - **Parses citations:** `_parse_citations` regex-extracts every `[SECTION_ID]`
   marker into `cited_section_ids`. **No verification here** — that is the next
   node's job.
@@ -310,9 +323,13 @@ default.
   scope" message and **no legal content**.
 - **Citation hygiene:** `_strip_unverified_markers` removes any `[ID]` marker not
   in `verified_section_ids`, so an unverified citation can never appear.
-- **For `ok` / `insufficient_evidence`:** cleaned answer + "Verified citations:"
-  line + "Confidence:" line with factor breakdown + disclaimer. For
-  `out_of_domain` / `rejected` / `error`: fixed honest messages, no legal text.
+- **For `ok` / `insufficient_evidence`:** cleaned answer + a **persona-aware
+  trailer** + disclaimer. Lawyer trailer: `Verified citations: …` + a
+  `Confidence: 0.82 (concept_coverage … · seed_strength … · …)` factor breakdown.
+  Citizen trailer: `The law behind this answer: …` + a worded band
+  `How confident is this answer: high/moderate/low.` (no numbers/jargon). For
+  `out_of_domain` / `rejected` / `error`: fixed honest messages, no legal text
+  (persona-neutral).
 - **Writes:** `final_answer`, final `status`.
 - **Next:** -> `END`. `GRAPH.invoke` returns the final state; `run()` returns it.
 
@@ -336,7 +353,7 @@ Two files, deliberately split:
 
 - **`agents/graph_state.py`** — `LegalQueryState`, the **pydantic** orchestration
   state LangGraph passes around. Field groups:
-  - input: `raw_query`
+  - input: `raw_query`, `persona` (login persona; `""` → `"citizen"` at use)
   - extraction: `extraction`, `grounded_concepts`
   - retrieval: `retrieval`, `max_hops`, `retrieval_iterations`
   - evaluation: `sufficiency`
@@ -581,6 +598,7 @@ model.
 | `agents/schemas.py` | Pydantic schemas for structured LLM output |
 | `agents/llm.py` | `ChatVertexAI` factory (reads config) |
 | `agents/ontology.py` | Deterministic concept grounding |
+| `agents/persona.py` | Persona vocabulary + `normalize_persona`/`match_persona` |
 | `agents/nodes/extraction_node.py` | LLM #1 — entity/concept extraction |
 | `agents/nodes/grounding_node.py` | Deterministic grounding |
 | `agents/nodes/retrieval_node.py` | Deterministic Neo4j retrieval |

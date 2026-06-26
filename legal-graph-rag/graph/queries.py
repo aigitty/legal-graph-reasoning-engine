@@ -475,6 +475,74 @@ def get_subgraph(section_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
     }
 
 
+def get_graph_stats() -> Dict[str, Dict[str, int]]:
+    """
+    Count every node grouped by its primary label and every relationship
+    grouped by its type. Read-only (MATCH ... RETURN); used by the API's
+    GET /graph/stats route so the numbers are always live, never hardcoded.
+
+    Parameters:
+        None
+
+    Returns:
+        Dictionary with:
+            nodes: {label -> count} for every node label present.
+            edges: {rel_type -> count} for every relationship type present.
+    """
+    driver = get_driver()
+
+    node_query = """
+    MATCH (n)
+    RETURN labels(n)[0] AS label, count(n) AS count
+    ORDER BY label
+    """
+
+    edge_query = """
+    MATCH ()-[r]->()
+    RETURN type(r) AS label, count(r) AS count
+    ORDER BY label
+    """
+
+    with driver.session() as session:
+        node_records = list(session.run(node_query))
+        edge_records = list(session.run(edge_query))
+
+    nodes = {
+        record["label"]: record["count"]
+        for record in node_records
+        if record["label"] is not None
+    }
+    edges = {record["label"]: record["count"] for record in edge_records}
+
+    return {"nodes": nodes, "edges": edges}
+
+
+def get_all_concepts() -> List[Dict[str, str]]:
+    """
+    Fetch every Concept node as an {id, name} pair, ordered by name.
+    Read-only; backs the API's GET /concepts route.
+
+    Parameters:
+        None
+
+    Returns:
+        List of dictionaries with keys "id" (concept_id) and "name".
+    """
+    driver = get_driver()
+    concept_label = NodeLabel.CONCEPT.value
+
+    query = f"""
+    MATCH (c:{concept_label})
+    RETURN c.concept_id AS id, c.name AS name
+    ORDER BY c.name
+    """
+
+    with driver.session() as session:
+        records = list(session.run(query))
+
+    return [{"id": record["id"], "name": record["name"]} for record in records]
+
+
 def test_connection() -> None:
     """
     Test Neo4j connectivity with a simple RETURN 1 query.

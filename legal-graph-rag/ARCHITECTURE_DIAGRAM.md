@@ -73,6 +73,11 @@ call; `[det]` = deterministic Python/Cypher.
 - Loop termination is decided by **plain-Python counters** (`MAX_ITERATIONS`),
   never by the LLM.
 - `recursion_limit` (25) is a backstop passed at `invoke()` time.
+- A `persona` (`citizen` | `lawyer`, set on the initial state at login) rides
+  the clipboard through every node but is read only by `answer_synthesis`
+  (persona-selected prompt) and `final_response` (persona-aware trailer). It
+  changes how the answer reads, never what is retrieved, verified, or cited —
+  and adds no LLM call.
 
 ---
 
@@ -133,10 +138,11 @@ call; `[det]` = deterministic Python/Cypher.
 
 | Layer | Files | Responsibility |
 |---|---|---|
-| Entry | `graph_agent.py` | Build/compile graph, `run()` |
+| Entry | `graph_agent.py` | Build/compile graph, persona login, `run(query, persona)` |
 | Orchestration | `graph_agent.py` (`build_graph`) | 8 nodes, 1 fork, 1 loop |
 | State | `agents/graph_state.py`, `agents/state.py` | The shared clipboard + domain models |
-| LLM | `agents/llm.py`, `prompts/`, `schemas.py` | 3 Gemini call sites, structured output |
+| LLM | `agents/llm.py`, `prompts/`, `schemas.py` | 3 Gemini call sites, structured output; synthesis prompt = `synthesis_base.txt` + persona overlay |
+| Persona | `agents/persona.py` | Canonical `citizen`/`lawyer` + `normalize_persona`/`match_persona` |
 | Graph access | `graph/db_connection.py`, `queries.py`, `traversal.py` | Read-only Neo4j + BFS |
 | Knowledge | Neo4j DB | The legal graph itself |
 | Config | `config.py`, `.env` | Every tunable + secrets |
