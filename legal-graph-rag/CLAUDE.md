@@ -19,8 +19,10 @@ This is a **single LangGraph state-machine workflow** (NOT multi-agent). It is a
 - **LangChain** — model/tool layer
 - **Gemini 2.5 Flash via Vertex AI** — the LLM (`langchain-google-vertexai`, `ChatVertexAI`)
 - **Neo4j** — graph database (READ-ONLY at runtime)
-- **FastAPI** — local runtime (not built yet)
-- **LangSmith** — observability (planned)
+- **FastAPI** — local runtime (`api/` package — **complete**)
+- **LangSmith** — observability (ambient tracing of the LangGraph run + all 3 LLM calls). Requires THREE `.env` vars: `LANGCHAIN_TRACING_V2=true`, `LANGCHAIN_API_KEY=<key>`, `LANGCHAIN_PROJECT=CourseLanggraph`. Two gotchas, both load-bearing:
+  - **The enable flag is matched case-sensitively against the literal `"true"`** (`langsmith.utils.tracing_is_enabled` → `var == "true"`). `True`/`TRUE` silently disable tracing with no error.
+  - **`load_dotenv()` must run before any LangChain/LangGraph/Vertex import** so the vars are in `os.environ` when the run is invoked. `graph_agent.py` already does this at the top (lines 33–35); preserve that ordering. `LANGCHAIN_PROJECT` is the project **name** (LangSmith resolves it) — a wrong/nonexistent name routes traces away from the dashboard rather than erroring.
 
 Auth for Vertex AI is via **Application Default Credentials (ADC)** — `gcloud auth application-default login`. Do NOT set `GOOGLE_APPLICATION_CREDENTIALS`. Required env vars: `GOOGLE_CLOUD_PROJECT`, `GOOGLE_CLOUD_LOCATION`.
 
@@ -37,7 +39,7 @@ These encode the project's core design. Violating them defeats the purpose of th
 5. **Every citation must be verified against Neo4j** before reaching the user, AND must have been in the retrieval set (the LLM may only cite what it was shown).
 6. **No raw dictionaries between agents.** Use the typed contracts in `agents/state.py` and `agents/graph_state.py`.
 7. **Prompts live as files** in `agents/prompts/`, never as inline strings. The synthesis system prompt is **composed** from `synthesis_base.txt` (the shared, integrity-critical rules — kept in ONE place so they can never drift) plus a persona overlay (`synthesis_citizen.txt` or `synthesis_lawyer.txt`); both halves are files.
-8. **Persona tailors presentation only, never substance.** The selected persona changes the synthesis tone/technicality/structure and the final-response trailer — it NEVER changes what is retrieved, verified, or allowed to be cited, and it does NOT add an LLM call (rule 1 still holds: exactly three).
+8. **Persona tailors presentation only, never substance.** The selected persona changes the synthesis tone/technicality/structure, how citation markers are *rendered*, and the final-response trailer — it NEVER changes what is retrieved, verified, or allowed to be cited, and it does NOT add an LLM call (rule 1 still holds: exactly three). Removing a *verified* marker from the citizen's visible text is presentation: verification already happened in `output_guardrail_node`, which runs first. Removing an *unverified* marker is rule 5 and is persona-independent.
 
 ---
 
@@ -45,11 +47,21 @@ These encode the project's core design. Violating them defeats the purpose of th
 
 ```
 legal-graph-rag/
-├── graph_agent.py          # ENTRY POINT — builds & compiles the LangGraph workflow
+├── graph_agent.py          # ENTRY POINT (CLI) — builds & compiles the LangGraph workflow
 ├── config.py               # pydantic-settings — SINGLE source of all runtime config
 ├── main.py                 # legacy CLI traversal tester (no LLM/agents) — keep
 ├── requirements.txt
-├── .env                    # Neo4j creds + GCP project/location
+├── .env                    # Neo4j creds + GCP project/location + LangSmith keys
+│
+├── api/                    # FastAPI HTTP layer — COMPLETE
+│   ├── __init__.py         # empty
+│   ├── app.py              # FastAPI app factory — `uvicorn api.app:app --reload --port 8000`
+│   ├── models.py           # QueryRequest / ConfidenceFactors / QueryResponse
+│   └── routes/
+│       ├── __init__.py     # empty
+│       ├── query.py        # POST /query
+│       ├── health.py       # GET  /health
+│       └── info.py         # GET  /graph/stats  and  GET  /concepts
 │
 ├── agents/                 # the agent layer
 │   ├── graph_state.py      # LegalQueryState — LangGraph orchestration state (Pydantic)
@@ -108,16 +120,14 @@ extraction → grounding → traversal → sufficiency → [conditional]
 - Full agent pipeline, all three LLM calls + both deterministic guardrail nodes:
   - `synthesis_node` (LLM call 3) — verified working; cites only evidence-pack section_ids, short-circuits the empty-retrieval path with no LLM call. **Persona-aware:** the system prompt is `synthesis_base.txt` + the selected persona overlay (citizen = plain-language/reassuring; lawyer = technical/section-by-section).
   - `output_guardrail_node` — verifies every citation against BOTH the retrieval set (provenance) AND Neo4j (existence), strips failures with a warning, computes the deterministic confidence score (§6), downgrades to `insufficient_evidence` below `MIN_CONFIDENCE`, and injects the disclaimer in code. Degrades honestly if Neo4j is unreachable (provenance-only + warning).
-  - `final_response_node` — pure formatting (NO LLM, NO Neo4j), assembles `final_answer` for all five terminal statuses with safety precedence (see §6); strips unverified inline `[SECTION_ID]` markers; wrapped so it never raises. **Persona-aware trailer:** lawyer gets "Verified citations:" + the numeric confidence factor breakdown; citizen gets a plain "The law behind this answer: …" line and a worded confidence band (high/moderate/low) with no jargon.
+  - `final_response_node` — pure formatting (NO LLM, NO Neo4j), assembles `final_answer` for all five terminal statuses with safety precedence (see §6); strips unverified inline `[SECTION_ID]` markers; wrapped so it never raises. **Persona-aware trailer:** lawyer gets "Verified citations:" (raw ids) + the numeric confidence factor breakdown; citizen gets "The law behind this answer: …" in readable form ("Section 18 of the Code on Wages") and a worded confidence band (high/moderate/low) with no jargon, capped at "moderate" when the evidence is partial.
 - `config.py` — pydantic-settings is the single source of all runtime config (model, per-call temps/token budgets, all hard limits, confidence weights, Neo4j creds, GCP project/location). Every former hardcoded constant now reads from here; override any value via an env var of the same name.
 
 **Verified terminal statuses:** `ok`, `insufficient_evidence`, `out_of_domain`, `rejected`, `error` — all exercised (live + offline) and producing correct output.
 
 **Not built yet (the roadmap):**
 
-- `api/` — FastAPI local runtime (`POST /query`, `/health`, `/graph/stats`, `/concepts`) — NEXT.
 - `tests/` — unit (confidence formula, citation stripping, grounding, node contracts) + integration (the §8 standing queries against real Neo4j).
-- LangSmith tracing setup (config keys already present; wiring pending).
 - `graph/retrieval.py` — optional refactor of `traversal.py` into parameterized `retrieve()` + `verify_sections()`.
 - Clean up `requirements.txt`: it still lists `groq`, `langchain-groq`, and `nemoguardrails`, none of which the runtime uses — the LLM layer is `langchain-google-vertexai` (`ChatVertexAI`, which must be pinned `<4.0.0`; see `agents/llm.py`) and the input/output guardrail logic lives in the pipeline nodes above (NeMo was never wired in). *(The vestigial `guardrails/` folder has already been removed.)*
 
@@ -126,7 +136,9 @@ extraction → grounding → traversal → sufficiency → [conditional]
 ## 6. Key architectural facts
 
 - **State:** `LegalQueryState` (Pydantic) flows through every node; each node returns a partial dict update. Step-7 fields: `verified_section_ids`, `confidence`, `confidence_factors`, `status`, `disclaimer`, `final_answer`. Also carries `persona` (selected at login; empty normalizes to `"citizen"`).
-- **Persona-aware output:** the persona (canonical `"citizen"` | `"lawyer"`, resolved by `agents/persona.py`; Lawyer/Judge/Advocate all map to `"lawyer"`) is set on the initial state. `run(raw_query, persona=None)` threads it in (default from `cfg.DEFAULT_PERSONA`); the CLI prompts for it once at login. It is consumed only by `synthesis_node` (prompt selection) and `final_response_node` (trailer). All integrity guarantees hold identically for both personas.
+- **Persona-aware output:** the persona (canonical `"citizen"` | `"lawyer"`, resolved by `agents/persona.py`; Lawyer/Judge/Advocate all map to `"lawyer"`) is set on the initial state. `run(raw_query, persona=None)` threads it in (default from `cfg.DEFAULT_PERSONA`); the CLI prompts for it once at login. It is consumed only by `synthesis_node` (prompt selection) and `final_response_node` (marker rendering + trailer). All integrity guarantees hold identically for both personas.
+- **Citizen readability rules (presentation only).** `synthesis_citizen.txt` enforces a fixed shape — a direct answer in the opening 2-3 sentences, then `What the law says` / `Where you stand` / `What you can do next`, plus `What this answer doesn't cover` only when `sufficient=False` — under hard budgets (200-350 words, ≤3 sections, no verbatim statutory quoting, never open a paragraph with a section number, never assume the events happened to the reader). `final_response_node` then: removes the verified `[SECTION_ID]` markers from the visible text (a layperson cannot use a machine id; the law is already named in words), renders the trailer as `Section 18 of the Code on Wages` using `act_name`/`section_number` from `state.retrieval`, and caps the worded confidence at "moderate" whenever the answer admits a gap — note this keys off the *sufficiency verdict*, not `status`, because the loop can exhaust with `sufficient=False` and still score above `MIN_CONFIDENCE` (status stays `ok`). The numeric score is never altered. Lawyer output is untouched by all of this.
+- **`act_name` is joined in the graph layer, not recalled by the LLM.** Section nodes store only `act_id`; `graph/queries.py` joins `(:Act)-[:HAS_SECTION]->(s)` in every read path (`get_sections_for_concept`, `get_sections_for_exact_concept`, `get_neighbors`, `get_subgraph`) via `_with_act_name`. Before this, the evidence pack showed an empty act name and the model supplied act names from its own memory.
 - **All tunable constants live in `config.py`** (`from config import cfg`). Do NOT reintroduce hardcoded models/temps/limits in node files — add a field to `config.py` instead.
 - **Confidence formula (deterministic, implemented in `output_guardrail_node`):**
   `confidence = 0.35·concept_coverage + 0.25·seed_strength + 0.20·sufficiency_score + 0.20·citation_validity`
@@ -161,12 +173,29 @@ python main.py
 #   [1] Normal Citizen / [2] Lawyer-Judge-Advocate, then "Enter your legal query:")
 python graph_agent.py
 
+# FastAPI server — interactive docs at http://localhost:8000/docs
+uvicorn api.app:app --reload --port 8000
+
 # Offline grounding check (no Neo4j/network)
 python -m agents.ontology
 
 # Vertex AI auth smoke test
 python -m agents.llm
+
+# Verify LangSmith tracing (non-interactive single query, then check the dashboard)
+"2`nwhat does Section 25N of the Industrial Disputes Act say?`nexit" | python graph_agent.py
 ```
+
+**Verify tracing:** after running any query above, a new trace must appear in the
+**CourseLanggraph** project:
+https://smith.langchain.com/o/e5f13691-d857-54eb-90ec-878eae6bc782/projects/p/027975bd-c093-472b-9753-5691347082cf
+In the UI, confirm: a single root run named `LangGraph`; the 8 pipeline nodes as
+child runs (`entity_extraction`, `concept_grounding`, `graph_traversal`,
+`sufficiency_evaluator`, `graph_expansion`*, `answer_synthesis`,
+`output_guardrail`, `final_response`); exactly **3** `ChatVertexAI` LLM child
+runs with non-zero token counts. Zero traces almost always means the `.env`
+enable flag is not the literal lowercase `true` (§2). (*`graph_expansion` only
+appears when the sufficiency loop runs.)
 
 Standing test queries (use these to verify any change):
 

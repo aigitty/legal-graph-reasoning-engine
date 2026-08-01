@@ -120,8 +120,38 @@ def _format_section(section: SectionContext) -> str:
     )
 
 
-def _build_human_message(state: LegalQueryState) -> str:
+def _select_sections(
+    state: LegalQueryState,
+    persona: str,
+) -> list[SectionContext]:
+    """
+    Choose which retrieved sections go into the evidence pack for this persona.
+
+    PRESENTATION ONLY. The full retrieval set is still traversed, verified
+    against Neo4j, and scored for confidence downstream — this only limits what
+    the synthesis LLM is asked to write about, and it can only ever SHRINK the
+    set the model may cite from (so CLAUDE.md rules 1-5 are unaffected).
+
+    Lawyers get everything: a practitioner wants the connected provisions. A
+    citizen gets at most cfg.CITIZEN_EVIDENCE_PACK_LIMIT, primaries first,
+    because a 15-section pack reliably produces a section-by-section answer no
+    layperson can use.
+    """
     sections = state.retrieval.sections
+    if persona != CITIZEN:
+        return sections
+
+    limit = cfg.CITIZEN_EVIDENCE_PACK_LIMIT
+    if limit <= 0 or len(sections) <= limit:
+        return sections
+
+    primary = [s for s in sections if s.relevance.lower() == "primary"]
+    supporting = [s for s in sections if s.relevance.lower() != "primary"]
+    return (primary + supporting)[:limit]
+
+
+def _build_human_message(state: LegalQueryState, persona: str) -> str:
+    sections = _select_sections(state, persona)
     pack = "\n\n".join(_format_section(s) for s in sections)
 
     grounded = ", ".join(state.grounded_concepts) or "none"
@@ -162,7 +192,7 @@ def answer_synthesis_node(state: LegalQueryState) -> dict:
     persona = normalize_persona(state.persona)
     messages = [
         ("system", _system_prompt(persona)),
-        ("human", _build_human_message(state)),
+        ("human", _build_human_message(state, persona)),
     ]
 
     last_exc: Exception | None = None

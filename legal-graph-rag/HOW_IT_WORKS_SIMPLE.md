@@ -47,9 +47,25 @@ The other five are **plain code** — no AI, just rules and database lookups.
 
 ---
 
-## Who starts everything? → `graph_agent.py`
+## Who starts everything?
 
-This is the **front door**. When you run `python graph_agent.py`, this file:
+There are two front doors depending on how you want to use the system:
+
+- **CLI (`graph_agent.py`)** — you type `python graph_agent.py`, pick a persona,
+  then ask questions interactively in the terminal.
+- **HTTP API (`api/app.py`)** — you run `uvicorn api.app:app --reload --port 8000`
+  and send JSON requests to `POST http://localhost:8000/query`. The same pipeline
+  runs; you just talk to it over HTTP instead of the terminal. There's an
+  interactive test page at `http://localhost:8000/docs`.
+
+Both call the same `run(query, persona)` function and get back the same result.
+The CLI prints it; the API serialises it as JSON.
+
+---
+
+## The CLI front door → `graph_agent.py`
+
+When you run `python graph_agent.py`, this file:
 
 1. **Asks who you are** (a quick login): `[1] Normal Citizen` or
    `[2] Lawyer / Judge / Advocate`. This choice — the **persona** — rides along
@@ -451,7 +467,8 @@ and a plain `How confident is this answer: high/moderate/low.` — no jargon.
 
 | Station | File | AI? | One-line job |
 |---|---|---|---|
-| Front door | `graph_agent.py` | – | Login (persona), build the line, run the question |
+| CLI front door | `graph_agent.py` | – | Login (persona), build the line, run the question |
+| HTTP front door | `api/app.py`, `api/routes/` | – | FastAPI server — POST /query, GET /health, /graph/stats, /concepts |
 | The clipboard | `agents/graph_state.py` | – | The form that travels station to station |
 | Persona | `agents/persona.py` | – | "citizen" vs "lawyer" — who the answer is written for |
 | 1 | `agents/nodes/extraction_node.py` | ✅ | Understand the question |

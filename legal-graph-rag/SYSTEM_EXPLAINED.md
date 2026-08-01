@@ -26,13 +26,14 @@ Every claim is anchored in the actual code in this repo.
 <a name="part-0"></a>
 ## Part 0 — The two ways this project "runs"
 
-There are **two separate entry points**, and conflating them is the #1 thing
+There are **three separate entry points**, and conflating them is the #1 thing
 that will trip you up.
 
 | Entry point | What it is | LLM? | Agents? |
 |---|---|---|---|
 | `python main.py` | A **legacy terminal tester** for graph traversal only. Pure Neo4j. | No | No |
-| `python graph_agent.py` | The **real agentic pipeline** — the LangGraph workflow. | Yes (3 calls) | Yes (the state machine) |
+| `python graph_agent.py` | The **real agentic pipeline** — interactive CLI. Prompts for persona, then accepts queries in a loop. | Yes (3 calls) | Yes (the state machine) |
+| `uvicorn api.app:app --reload --port 8000` | The **FastAPI HTTP server** — the same pipeline exposed as a REST API. Interactive docs at `/docs`. | Yes (3 calls, via `run()`) | Yes (same pipeline) |
 
 `main.py` literally prints *"No LLM. No agents. No guardrails."* (line 182). It
 is a debugging harness to eyeball what traversal returns. Everything that matters
@@ -536,17 +537,16 @@ coverage gap; low `citation_validity` -> synthesis prompt let the model drift.
    cited vs verified ids, warnings, and the final answer. The manual inspection
    tool.
 
-**What is configured but not actively wired:**
-- LangSmith env vars exist (`LANGCHAIN_TRACING_V2`, `LANGCHAIN_API_KEY`,
-  `LANGCHAIN_PROJECT`) and `config.py` carries them. **Nuance:** LangChain /
-  LangGraph emit traces to LangSmith **automatically** if
-  `LANGCHAIN_TRACING_V2=true` and the API key are set — because the LLM calls go
-  through LangChain's `ChatVertexAI` and the pipeline runs through LangGraph, both
+**LangSmith tracing — now active:**
+- `LANGCHAIN_TRACING_V2=true` and `LANGCHAIN_API_KEY` are set in `.env`;
+  `config.py` reads them. LangChain / LangGraph emit traces to LangSmith
+  **automatically** when these vars are present — because the LLM calls go
+  through `ChatVertexAI` and the pipeline runs through LangGraph, both
   auto-instrumented. There is **no explicit tracing code** in the repo; it is
-  "ambient." Honest statement: *LangSmith tracing is wired by configuration, not
-  by code — set the env flag and traces flow; explicit run-id capture and
-  `@traceable` decorators on the Neo4j functions are not yet added.* The
-  architecture doc (§12) describes the fuller intended setup — roadmap, not built.
+  "ambient." `load_dotenv()` in `graph_agent.py` is called *before* the first
+  LangChain import, so the vars are present at client-build time. Explicit
+  `@traceable` decorators on Neo4j functions and run-ID capture are not yet
+  added but could be a future enhancement.
 
 **How you would read it:** with the env flag on, each `GRAPH.invoke` appears in
 the LangSmith UI as a tree — the 8 node spans, the 2–3 Gemini calls with
@@ -592,7 +592,12 @@ model.
 
 | File | Role |
 |---|---|
-| `graph_agent.py` | Entry point — builds/compiles the graph, `run()` |
+| `graph_agent.py` | CLI entry point — builds/compiles the graph, `run()` |
+| `api/app.py` | FastAPI app factory — `uvicorn api.app:app` |
+| `api/models.py` | `QueryRequest` / `ConfidenceFactors` / `QueryResponse` |
+| `api/routes/query.py` | `POST /query` — calls `run()` in thread pool |
+| `api/routes/health.py` | `GET /health` — Neo4j ping + default persona |
+| `api/routes/info.py` | `GET /graph/stats` and `GET /concepts` |
 | `agents/graph_state.py` | `LegalQueryState` — the shared state |
 | `agents/state.py` | Dependency-free domain dataclasses |
 | `agents/schemas.py` | Pydantic schemas for structured LLM output |

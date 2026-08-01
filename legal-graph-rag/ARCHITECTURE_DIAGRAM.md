@@ -86,7 +86,17 @@ call; `[det]` = deterministic Python/Cypher.
 ```
 ┌──────────────────────────────── YOUR MACHINE ────────────────────────────────┐
 │                                                                               │
-│   python graph_agent.py  ──►  run(query)  ──►  GRAPH.invoke({"raw_query":...}) │
+│   ┌─────────────────────┐      ┌──────────────────────────────────────────┐   │
+│   │ uvicorn api.app:app │      │ python graph_agent.py (CLI)              │   │
+│   │  POST /query        │      │  interactive persona login + query loop  │   │
+│   │  GET  /health       │      └───────────────────┬──────────────────────┘   │
+│   │  GET  /graph/stats  │                          │                          │
+│   │  GET  /concepts     │                          │ run(query, persona)      │
+│   └──────────┬──────────┘                          │                          │
+│              │ async run_in_executor                │                          │
+│              └─────────────────────┬───────────────┘                          │
+│                                    ▼                                          │
+│                    GRAPH.invoke({"raw_query":..., "persona":...})              │
 │                                                                               │
 │  ┌──────────────────── LangGraph workflow (the "agent") ──────────────────┐  │
 │  │  STATE = LegalQueryState  (pydantic clipboard, passed node to node)     │  │
@@ -138,7 +148,8 @@ call; `[det]` = deterministic Python/Cypher.
 
 | Layer | Files | Responsibility |
 |---|---|---|
-| Entry | `graph_agent.py` | Build/compile graph, persona login, `run(query, persona)` |
+| HTTP entry | `api/app.py`, `api/routes/` | FastAPI server — `POST /query`, `GET /health`, `/graph/stats`, `/concepts` |
+| CLI entry | `graph_agent.py` | Persona login, interactive query loop, `run(query, persona)` |
 | Orchestration | `graph_agent.py` (`build_graph`) | 8 nodes, 1 fork, 1 loop |
 | State | `agents/graph_state.py`, `agents/state.py` | The shared clipboard + domain models |
 | LLM | `agents/llm.py`, `prompts/`, `schemas.py` | 3 Gemini call sites, structured output; synthesis prompt = `synthesis_base.txt` + persona overlay |

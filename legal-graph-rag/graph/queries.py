@@ -301,6 +301,21 @@ def get_section_by_id(section_id: str) -> Optional[Dict[str, Any]]:
     return dict(record["s"])
 
 
+def _with_act_name(section: Any, act_name: Any) -> Dict[str, Any]:
+    """
+    Merge the owning Act's display name into a Section dict.
+
+    Section nodes store only `act_id`; the human-readable `act_name` lives on
+    the Act node. The agent layer needs the readable name (evidence pack and the
+    citizen citation trailer both show it), so every read path that returns
+    sections joins it here rather than letting the LLM recall act names from its
+    own memory. Read-only — no mutation of the graph.
+    """
+    data = dict(section)
+    data["act_name"] = act_name or ""
+    return data
+
+
 def get_sections_for_concept(concept_name: str) -> List[Dict[str, Any]]:
     """
     Find Section nodes linked to a Concept whose name or aliases match the query.
@@ -317,7 +332,9 @@ def get_sections_for_concept(concept_name: str) -> List[Dict[str, Any]]:
 
     section_label = NodeLabel.SECTION.value
     concept_label = NodeLabel.CONCEPT.value
+    act_label = NodeLabel.ACT.value
     applies_to_rel = RelType.APPLIES_TO.value
+    has_section_rel = RelType.HAS_SECTION.value
 
     query = f"""
     MATCH (s:{section_label})-[r:{applies_to_rel}]->(c:{concept_label})
@@ -328,6 +345,7 @@ def get_sections_for_concept(concept_name: str) -> List[Dict[str, Any]]:
         OR ANY(alias IN c.aliases WHERE toLower($concept_name) CONTAINS toLower(alias))
     RETURN
         s,
+        [ (a:{act_label})-[:{has_section_rel}]->(s) | a.act_name ][0] AS act_name,
         c.concept_id AS concept_id,
         c.name AS concept_name,
         r.relevance AS relevance
@@ -348,7 +366,7 @@ def get_sections_for_concept(concept_name: str) -> List[Dict[str, Any]]:
 
     return [
         {
-            "section": dict(record["s"]),
+            "section": _with_act_name(record["s"], record["act_name"]),
             "concept_id": record["concept_id"],
             "concept_name": record["concept_name"],
             "relevance": record["relevance"],
@@ -374,6 +392,8 @@ def get_neighbors(section_id: str) -> List[Dict[str, Any]]:
     """
     driver = get_driver()
     section_label = NodeLabel.SECTION.value
+    act_label = NodeLabel.ACT.value
+    has_section_rel = RelType.HAS_SECTION.value
 
     query = f"""
     MATCH (s:{section_label} {{section_id: $section_id}})
@@ -387,7 +407,11 @@ def get_neighbors(section_id: str) -> List[Dict[str, Any]]:
         MATCH (neighbor)-[r]->(s)
         RETURN neighbor, type(r) AS rel_type, 'incoming' AS direction
     }}
-    RETURN neighbor, rel_type, direction
+    RETURN
+        neighbor,
+        rel_type,
+        direction,
+        [ (a:{act_label})-[:{has_section_rel}]->(neighbor) | a.act_name ][0] AS act_name
     ORDER BY rel_type, direction
     """
 
@@ -399,7 +423,9 @@ def get_neighbors(section_id: str) -> List[Dict[str, Any]]:
 
     return [
         {
-            "node": dict(record["neighbor"]),
+            # act_name is only ever non-null for Section neighbours; other node
+            # types simply get "".
+            "node": _with_act_name(record["neighbor"], record["act_name"]),
             "rel_type": record["rel_type"],
             "direction": record["direction"],
         }
@@ -429,13 +455,17 @@ def get_subgraph(section_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
 
     driver = get_driver()
     section_label = NodeLabel.SECTION.value
+    act_label = NodeLabel.ACT.value
     cites_rel = RelType.CITES.value
+    has_section_rel = RelType.HAS_SECTION.value
 
     query = f"""
     MATCH (s:{section_label})
     WHERE s.section_id IN $section_ids
 
-    WITH collect(s) AS sections
+    WITH collect(
+        s{{.*, act_name: [ (a:{act_label})-[:{has_section_rel}]->(s) | a.act_name ][0]}}
+    ) AS sections
 
     OPTIONAL MATCH (source:{section_label})-[r:{cites_rel}]->(target:{section_label})
     WHERE source.section_id IN $section_ids
@@ -581,13 +611,16 @@ def get_sections_for_exact_concept(concept_name: str) -> List[Dict[str, Any]]:
 
     section_label = NodeLabel.SECTION.value
     concept_label = NodeLabel.CONCEPT.value
+    act_label = NodeLabel.ACT.value
     applies_to_rel = RelType.APPLIES_TO.value
+    has_section_rel = RelType.HAS_SECTION.value
 
     query = f"""
     MATCH (s:{section_label})-[r:{applies_to_rel}]->(c:{concept_label})
     WHERE toLower(c.name) = toLower($concept_name)
     RETURN
         s,
+        [ (a:{act_label})-[:{has_section_rel}]->(s) | a.act_name ][0] AS act_name,
         c.concept_id AS concept_id,
         c.name AS concept_name,
         r.relevance AS relevance
@@ -602,7 +635,7 @@ def get_sections_for_exact_concept(concept_name: str) -> List[Dict[str, Any]]:
 
     return [
         {
-            "section": dict(record["s"]),
+            "section": _with_act_name(record["s"], record["act_name"]),
             "concept_id": record["concept_id"],
             "concept_name": record["concept_name"],
             "relevance": record["relevance"],

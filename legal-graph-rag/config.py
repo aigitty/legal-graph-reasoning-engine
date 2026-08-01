@@ -138,6 +138,25 @@ class Settings(BaseSettings):
     # ------------------------------------------------------------------ #
     DEFAULT_PERSONA: str = "citizen"
 
+    # --- Citizen readability controls (presentation only) ---------------- #
+    # Optional cap on how many sections the synthesis LLM is shown for the
+    # citizen persona (primaries first). DEFAULT 0 = disabled, deliberately.
+    #
+    # Trimming was tried as a way to stop 15-section packs producing
+    # section-by-section citizen answers, but supporting sections arrive in
+    # BFS/act order rather than relevance order, so a cap of 5 silently dropped
+    # the sections that actually answered the question (a deductions query lost
+    # COW_2019_S18/S21 and had to answer "the law does not address this"). The
+    # prompt's own "use at most 3 sections" rule achieves the same brevity
+    # without discarding evidence. Keep this at 0 unless a relevance-ranked
+    # ordering exists to trim against.
+    CITIZEN_EVIDENCE_PACK_LIMIT: int = 0
+
+    # Bands for the citizen trailer's worded confidence ("high"/"moderate"/
+    # "low"). The lower band mirrors MIN_CONFIDENCE.
+    CITIZEN_CONFIDENCE_HIGH: float = 0.7
+    CITIZEN_CONFIDENCE_MODERATE: float = 0.4
+
 
 # Module-level singleton — import this everywhere.
 cfg = Settings()

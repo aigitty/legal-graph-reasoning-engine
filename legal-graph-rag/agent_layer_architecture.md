@@ -1,5 +1,13 @@
 # Legal Graph RAG — Agent Layer Architecture (v1)
 
+> **HISTORICAL DESIGN DOCUMENT — for reference only.**
+> This was the architecture plan written before implementation. The system is now
+> fully built. For the current state of the project, read `CLAUDE.md` (rules +
+> status), `HOW_IT_WORKS_SIMPLE.md` (plain-English walkthrough), and
+> `SYSTEM_EXPLAINED.md` (deep technical walkthrough). Key divergences from this
+> plan: the folder is `agents/` not `agent/`; FastAPI schemas use `persona` not
+> `langsmith_run_id`/`timings_ms`; auth is ADC not a service-account key file.
+
 Design document for the redesigned reasoning/agent layer, built on top of the completed ingestion layer (5 Acts, 255 Section nodes, 127 CITES edges, 25 Concept nodes, 75 APPLIES_TO edges, `graph/traversal.py` deterministic retrieval).
 
 Stack: **LangGraph (orchestration) + LangChain (model/tool layer) + Gemini via Vertex AI (LLM) + Neo4j (graph) + FastAPI (local runtime) + LangSmith (observability)**.
