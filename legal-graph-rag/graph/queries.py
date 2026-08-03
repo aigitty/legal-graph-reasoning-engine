@@ -301,19 +301,86 @@ def get_section_by_id(section_id: str) -> Optional[Dict[str, Any]]:
     return dict(record["s"])
 
 
-def _with_act_name(section: Any, act_name: Any) -> Dict[str, Any]:
+def _with_act_meta(section: Any, act: Any) -> Dict[str, Any]:
     """
-    Merge the owning Act's display name into a Section dict.
+    Merge the owning Act's display name AND its temporal/territorial metadata
+    into a Section dict.
 
-    Section nodes store only `act_id`; the human-readable `act_name` lives on
-    the Act node. The agent layer needs the readable name (evidence pack and the
-    citizen citation trailer both show it), so every read path that returns
-    sections joins it here rather than letting the LLM recall act names from its
-    own memory. Read-only — no mutation of the graph.
+    Section nodes store only `act_id`; everything the agent layer needs to judge
+    a section — the readable act name, whether the Act is still in force, and
+    where it applies — lives on the Act node. Every read path that returns
+    sections joins it here, so:
+
+      - the LLM never recalls an act name from its own memory (evidence pack and
+        the citizen citation trailer both show the joined name), and
+      - retrieval can deterministically drop repealed law and law belonging to
+        the wrong state (agents/nodes/retrieval_node.py) instead of presenting
+        superseded or out-of-territory provisions as though they applied.
+
+    `act` may be None for non-Section neighbours; the defaults below then keep
+    the section usable rather than dropping it. Read-only — no graph mutation.
     """
     data = dict(section)
-    data["act_name"] = act_name or ""
+    props = dict(act) if act is not None else {}
+
+    data["act_name"] = props.get("act_name") or ""
+    data["jurisdiction"] = props.get("jurisdiction") or "Central"
+    # Absent metadata means the act_metadata_loader has not been run yet. Treat
+    # that as in-force so an un-annotated graph degrades to the old behaviour
+    # rather than silently retrieving nothing.
+    data["in_force_status"] = props.get("status") or "in_force"
+    data["in_force_from"] = props.get("in_force_from") or ""
+    data["repealed_by"] = props.get("repealed_by") or ""
+    data["repeal_authority"] = props.get("repeal_authority") or ""
+    data["act_priority"] = int(props.get("act_priority") or 0)
     return data
+
+
+def get_act_metadata() -> Dict[str, Dict[str, Any]]:
+    """
+    Fetch every Act's temporal/territorial metadata, keyed by act_id.
+
+    Read-only. Used to explain a suppression to the user ("the Minimum Wages Act
+    1948 was repealed by section 69 of the Code on Wages, 2019") without having
+    to re-query per section.
+
+    Returns:
+        {act_id: {act_name, jurisdiction, status, in_force_from, repealed_by,
+                  repeal_authority, act_priority}}
+    """
+    driver = get_driver()
+    act_label = NodeLabel.ACT.value
+
+    query = f"""
+    MATCH (a:{act_label})
+    RETURN
+        a.act_id           AS act_id,
+        a.act_name         AS act_name,
+        a.jurisdiction     AS jurisdiction,
+        a.status           AS status,
+        a.in_force_from    AS in_force_from,
+        a.repealed_by      AS repealed_by,
+        a.repeal_authority AS repeal_authority,
+        a.act_priority     AS act_priority
+    ORDER BY a.act_id
+    """
+
+    with driver.session() as session:
+        records = list(session.run(query))
+
+    return {
+        record["act_id"]: {
+            "act_name": record["act_name"] or "",
+            "jurisdiction": record["jurisdiction"] or "Central",
+            "status": record["status"] or "in_force",
+            "in_force_from": record["in_force_from"] or "",
+            "repealed_by": record["repealed_by"] or "",
+            "repeal_authority": record["repeal_authority"] or "",
+            "act_priority": int(record["act_priority"] or 0),
+        }
+        for record in records
+        if record["act_id"]
+    }
 
 
 def get_sections_for_concept(concept_name: str) -> List[Dict[str, Any]]:
@@ -345,7 +412,7 @@ def get_sections_for_concept(concept_name: str) -> List[Dict[str, Any]]:
         OR ANY(alias IN c.aliases WHERE toLower($concept_name) CONTAINS toLower(alias))
     RETURN
         s,
-        [ (a:{act_label})-[:{has_section_rel}]->(s) | a.act_name ][0] AS act_name,
+        [ (a:{act_label})-[:{has_section_rel}]->(s) | a ][0] AS act,
         c.concept_id AS concept_id,
         c.name AS concept_name,
         r.relevance AS relevance
@@ -366,7 +433,7 @@ def get_sections_for_concept(concept_name: str) -> List[Dict[str, Any]]:
 
     return [
         {
-            "section": _with_act_name(record["s"], record["act_name"]),
+            "section": _with_act_meta(record["s"], record["act"]),
             "concept_id": record["concept_id"],
             "concept_name": record["concept_name"],
             "relevance": record["relevance"],
@@ -411,7 +478,7 @@ def get_neighbors(section_id: str) -> List[Dict[str, Any]]:
         neighbor,
         rel_type,
         direction,
-        [ (a:{act_label})-[:{has_section_rel}]->(neighbor) | a.act_name ][0] AS act_name
+        [ (a:{act_label})-[:{has_section_rel}]->(neighbor) | a ][0] AS act
     ORDER BY rel_type, direction
     """
 
@@ -423,9 +490,9 @@ def get_neighbors(section_id: str) -> List[Dict[str, Any]]:
 
     return [
         {
-            # act_name is only ever non-null for Section neighbours; other node
-            # types simply get "".
-            "node": _with_act_name(record["neighbor"], record["act_name"]),
+            # `act` is only ever non-null for Section neighbours; other node
+            # types fall back to the defaults in _with_act_meta.
+            "node": _with_act_meta(record["neighbor"], record["act"]),
             "rel_type": record["rel_type"],
             "direction": record["direction"],
         }
@@ -462,17 +529,16 @@ def get_subgraph(section_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
     query = f"""
     MATCH (s:{section_label})
     WHERE s.section_id IN $section_ids
+    OPTIONAL MATCH (a:{act_label})-[:{has_section_rel}]->(s)
 
-    WITH collect(
-        s{{.*, act_name: [ (a:{act_label})-[:{has_section_rel}]->(s) | a.act_name ][0]}}
-    ) AS sections
+    WITH collect({{section: s, act: a}}) AS rows
 
     OPTIONAL MATCH (source:{section_label})-[r:{cites_rel}]->(target:{section_label})
     WHERE source.section_id IN $section_ids
       AND target.section_id IN $section_ids
 
     RETURN
-        sections,
+        rows,
         collect({{
             source_section_id: source.section_id,
             target_section_id: target.section_id,
@@ -490,7 +556,9 @@ def get_subgraph(section_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
             "cites_edges": [],
         }
 
-    sections = [dict(section) for section in record["sections"]]
+    sections = [
+        _with_act_meta(row["section"], row["act"]) for row in record["rows"]
+    ]
 
     cites_edges = [
         edge
@@ -620,7 +688,7 @@ def get_sections_for_exact_concept(concept_name: str) -> List[Dict[str, Any]]:
     WHERE toLower(c.name) = toLower($concept_name)
     RETURN
         s,
-        [ (a:{act_label})-[:{has_section_rel}]->(s) | a.act_name ][0] AS act_name,
+        [ (a:{act_label})-[:{has_section_rel}]->(s) | a ][0] AS act,
         c.concept_id AS concept_id,
         c.name AS concept_name,
         r.relevance AS relevance
@@ -635,7 +703,7 @@ def get_sections_for_exact_concept(concept_name: str) -> List[Dict[str, Any]]:
 
     return [
         {
-            "section": _with_act_name(record["s"], record["act_name"]),
+            "section": _with_act_meta(record["s"], record["act"]),
             "concept_id": record["concept_id"],
             "concept_name": record["concept_name"],
             "relevance": record["relevance"],

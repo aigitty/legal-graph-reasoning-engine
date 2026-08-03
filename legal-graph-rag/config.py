@@ -95,8 +95,15 @@ class Settings(BaseSettings):
     # sufficiency_node exits the loop when retrieval_iterations >= this.
     MAX_RETRIEVAL_ITERATIONS: int = 2
 
-    # Sections cap per traversal call (retrieval_node).
+    # Final sections cap for the evidence pack, applied AFTER the union across
+    # all grounded concepts has been ranked against the user's query.
     MAX_SECTIONS: int = 15
+
+    # Per-concept safety valve inside graph/traversal.py. Deliberately much
+    # larger than MAX_SECTIONS: trimming per concept happens before the ranker
+    # has seen the query, so cutting hard there would discard candidates the
+    # ranker would have chosen. Global ranking then cuts to MAX_SECTIONS.
+    MAX_SECTIONS_PER_CONCEPT: int = 40
 
     # Maximum traversal depth. Initial depth is MAX_HOPS_DEFAULT; each
     # expansion pass adds one hop up to MAX_HOPS_CAP.
@@ -109,6 +116,53 @@ class Settings(BaseSettings):
 
     # Sufficiency-preview character limit used in the sufficiency prompt.
     SUFFICIENCY_PREVIEW_CHARS: int = 200
+
+    # ------------------------------------------------------------------ #
+    # Retrieval ranking (graph/ranking.py)                                 #
+    #                                                                      #
+    # Deterministic relevance scoring over the retrieved set. Before this, #
+    # sections came back in (act_id, section_number) order and the cap     #
+    # sliced that arbitrary order, so the sections that actually answered  #
+    # the question could be dropped. Weights are normalised by their sum,  #
+    # so they do not have to add to 1.0.                                   #
+    # ------------------------------------------------------------------ #
+    RANK_W_RELEVANCE: float = 0.35      # ontology said primary vs supporting
+    RANK_W_CONCEPT_HITS: float = 0.15   # how many grounded concepts hit it
+    RANK_W_HOP: float = 0.20            # anchor beats a distant CITES hop
+    RANK_W_LEXICAL: float = 0.20        # BM25 of the query vs title + text
+    RANK_W_ACT_PRIORITY: float = 0.10   # prefer the operative consolidating Code
+
+    # Score floor for a SUPPORTING section on the relevance signal. Not 0.0:
+    # a supporting section is still curated evidence, it just should not
+    # outrank a primary on that signal alone.
+    RANK_SUPPORTING_FLOOR: float = 0.45
+
+    # How many times the section title is repeated into the BM25 document.
+    # A title match is a much stronger signal of topicality than one hit
+    # somewhere in a 19,000-character section body.
+    RANK_TITLE_WEIGHT: int = 3
+
+    # ------------------------------------------------------------------ #
+    # Temporal + territorial filtering (A.2 / A.3)                         #
+    #                                                                      #
+    # Source of truth is data/ontology/act_metadata.json, mirrored onto    #
+    # the Act nodes by ingest/act_metadata_loader.py.                      #
+    # ------------------------------------------------------------------ #
+
+    # Drop sections belonging to a repealed Act before they reach the LLM.
+    # Turning this off restores the pre-fix behaviour (repealed and operative
+    # law cited side by side) and is only useful for A/B demonstration.
+    SUPPRESS_REPEALED_ACTS: bool = True
+
+    # Drop a STATE act when the user named a DIFFERENT state. Karnataka's
+    # Shops Act must never be cited to a user in Maharashtra.
+    FILTER_BY_JURISDICTION: bool = True
+
+    # When the user names no state at all, state acts are kept (dropping them
+    # would leave weekly-holiday / annual-leave questions unanswerable) but
+    # multiplied by this factor so Central law ranks first, and a warning is
+    # raised. 0.0 would drop them entirely.
+    UNSTATED_JURISDICTION_PENALTY: float = 0.6
 
     # ------------------------------------------------------------------ #
     # Output guardrail — confidence                                        #

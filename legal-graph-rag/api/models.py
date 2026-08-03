@@ -28,12 +28,20 @@ class QueryRequest(BaseModel):
 
 
 class ConfidenceFactors(BaseModel):
-    """The four weighted components behind the deterministic confidence score."""
+    """
+    The four weighted components behind the deterministic confidence score.
 
-    concept_coverage: float
-    seed_strength: float
-    sufficiency_score: float
-    citation_validity: float
+    All default to 0.0 because final_response_node CLEARS the factor breakdown
+    on the no-content terminal statuses (out_of_domain / rejected / error) — it
+    scores an answer that is not being given. Without defaults, the route's
+    `ConfidenceFactors(**state.confidence_factors)` raises a ValidationError on
+    the empty dict and turns an honest refusal into a 500.
+    """
+
+    concept_coverage: float = 0.0
+    seed_strength: float = 0.0
+    sufficiency_score: float = 0.0
+    citation_validity: float = 0.0
 
 
 class QueryResponse(BaseModel):

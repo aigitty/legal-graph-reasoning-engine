@@ -7,9 +7,15 @@ them, and what to actually do next. Write for them — not for a court.
 HARD LIMITS — these are requirements, not suggestions:
 - 200-350 words in total. Never longer.
 - Keep sentences under 25 words. Use everyday words a 15-year-old would follow.
-- Rely on AT MOST 3 sections. Prefer the ones tagged PRIMARY. Leave the others
-  out even though they are in the evidence pack — a section that does not change
-  where this person stands or what they should do is noise to them.
+- Rely on AT MOST 3 sections. Take them from the TOP of the ranked pack,
+  preferring the ones tagged PRIMARY. Leave the others out even though they are
+  in the evidence pack — a section that does not change where this person stands
+  or what they should do is noise to them. Choosing a lower-ranked section over
+  #1 is almost always a mistake: #1 was scored against this exact question.
+- Do not stop at ONE section when more than one independently affects where the
+  reader stands. A central Act and a state Act can both give them a separate
+  right over the same events, and mentioning only one understates what they are
+  owed. Two well-explained sections beat one, as long as each earns its place.
 - NEVER quote statutory language word-for-word. Translate it. Write "your
   employer must give you a chance to explain first", NOT "no deduction shall be
   made until the employee has been given an opportunity to show cause".

@@ -49,19 +49,39 @@ class SectionContext:
     source_concept: str = ""
     act_priority: int = 0
 
+    # --- temporal / territorial (joined from the Act node by graph/queries.py) ---
+    # These let retrieval deterministically drop law that is no longer in force
+    # or belongs to another state, instead of presenting it as though it applied.
+    jurisdiction: str = "Central"
+    in_force_status: str = "in_force"   # "in_force" | "repealed"
+    repealed_by: str = ""
+    repeal_authority: str = ""
+
+    # --- retrieval provenance / ranking (graph/ranking.py) ---
+    hop_distance: int = 0     # 0 = concept anchor, n = n CITES hops from one
+    concept_hits: int = 1     # how many grounded concepts reached this section
+    score: float = 0.0        # deterministic relevance score, higher is better
+
+    @property
+    def is_in_force(self) -> bool:
+        return self.in_force_status != "repealed"
+
     @classmethod
     def from_dict(
         cls,
         data: dict[str, object],
         relevance: str,
         source_concept: str,
+        hop_distance: int = 0,
     ) -> "SectionContext":
         """
         Build SectionContext from a raw graph dictionary.
 
         This method is the bridge between graph/queries.py and the agent layer.
         It handles missing keys gracefully so graph changes do not immediately
-        crash the agent pipeline.
+        crash the agent pipeline. Temporal/territorial fields default to the
+        permissive values, so a graph that has not had act_metadata_loader run
+        against it still behaves exactly as it did before those fields existed.
         """
 
         return cls(
@@ -74,6 +94,11 @@ class SectionContext:
             relevance=relevance or "supporting",
             source_concept=source_concept or "",
             act_priority=int(data.get("act_priority", 0) or 0),
+            jurisdiction=str(data.get("jurisdiction") or "Central"),
+            in_force_status=str(data.get("in_force_status") or "in_force"),
+            repealed_by=str(data.get("repealed_by") or ""),
+            repeal_authority=str(data.get("repeal_authority") or ""),
+            hop_distance=int(hop_distance or 0),
         )
 
 
@@ -114,6 +139,11 @@ class RetrievalResult:
     confidence: float = 0.0
     is_empty: bool = True
     jurisdiction_applied: str = "Central"
+
+    # Sections removed by the temporal / territorial filters, kept for
+    # auditability: the pipeline must be able to say WHY law was withheld
+    # rather than silently returning less. Keyed act_id -> reason.
+    suppressed_acts: dict[str, str] = field(default_factory=dict)
 
     @property
     def section_ids(self) -> set[str]:

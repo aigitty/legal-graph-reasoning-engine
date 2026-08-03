@@ -29,14 +29,15 @@ Determinism boundaries:
 from __future__ import annotations
 
 import logging
-import re
 from pathlib import Path
 
+from agents.citations import parse_citations
 from agents.graph_state import LegalQueryState
 from agents.llm import get_llm
 from agents.persona import CITIZEN, LAWYER, normalize_persona
 from agents.state import SectionContext
 from config import cfg
+from graph import act_registry
 
 logger = logging.getLogger(__name__)
 
@@ -76,45 +77,40 @@ _SYNTHESIS_LLM = get_llm(
 )
 
 # Honest fallback for the empty-retrieval / out-of-domain path. No markers ever.
+# The scope sentence is DERIVED from act_metadata (see act_registry.scope_sentence)
+# so it can never advertise a statute the engine has since marked repealed and
+# refuses to cite.
 _NO_EVIDENCE_ANSWER = (
     "The system did not find any applicable sections in its legal knowledge "
     "graph for this query.\n\n"
-    "This engine answers questions about Indian employment and labour law as "
-    "covered by the Industrial Disputes Act 1947, the Payment of Gratuity Act "
-    "1972, the Minimum Wages Act 1948, the Karnataka Shops and Establishments "
-    "Act 1961, and the Code on Wages 2019. If your question falls outside that "
+    f"{act_registry.scope_sentence()} If your question falls outside that "
     "scope, the system cannot answer it.\n\n"
     "The system does not guess at legal provisions it has not retrieved, so no "
     "sections are cited here."
 )
 
-# Permissive citation-marker pattern. Deliberately NOT restricted to the valid
-# section_id shape: catching malformed / out-of-pack markers (e.g. [IPC/302])
-# is the entire point of verification and the later output guardrail. Matches an
-# uppercase/digit-led token (no internal spaces) inside square brackets.
-_CITATION_RE = re.compile(r"\[([A-Z0-9][A-Z0-9_/.\-]{2,})\]")
+# Marker parsing lives in agents/citations.py so the parser and the stripper in
+# final_response_node can never disagree about what counts as a citation — a
+# marker one of them fails to recognise is a marker that is never verified.
+# The pattern is deliberately permissive about the id shape: catching malformed
+# or out-of-pack markers (e.g. [IPC/302]) is the entire point of verification.
 
 
-def _looks_like_citation(token: str) -> bool:
-    # Exclude bare label words like [PRIMARY]; real section ids carry a digit,
-    # an underscore, or a slash.
-    return any(ch.isdigit() for ch in token) or "_" in token or "/" in token
+def _format_section(section: SectionContext, rank: int) -> str:
+    """
+    Render one evidence-pack entry.
 
-
-def _parse_citations(text: str) -> list[str]:
-    seen: set[str] = set()
-    ordered: list[str] = []
-    for token in _CITATION_RE.findall(text):
-        if _looks_like_citation(token) and token not in seen:
-            seen.add(token)
-            ordered.append(token)
-    return ordered
-
-
-def _format_section(section: SectionContext) -> str:
+    The `rank` is surfaced deliberately. graph/ranking.py scores the retrieved
+    set against the user's actual query, but that ordering was invisible to the
+    model — the pack looked like an unordered list, so it picked whichever
+    section read as most topical in isolation. On "fired without notice after 3
+    years" that meant citing a notice-of-dismissal provision while the operative
+    retrenchment section, ranked #1, went unmentioned. Numbering the pack lets
+    the prompt tell the model to work down from the top.
+    """
     full_text = " ".join(section.section_text.split())
     return (
-        f"[{section.section_id}] ({section.relevance.upper()}) "
+        f"#{rank} [{section.section_id}] ({section.relevance.upper()}) "
         f"{section.act_name} — Section {section.section_number}: "
         f"{section.section_title}\n{full_text}"
     )
@@ -152,7 +148,9 @@ def _select_sections(
 
 def _build_human_message(state: LegalQueryState, persona: str) -> str:
     sections = _select_sections(state, persona)
-    pack = "\n\n".join(_format_section(s) for s in sections)
+    pack = "\n\n".join(
+        _format_section(s, rank) for rank, s in enumerate(sections, start=1)
+    )
 
     grounded = ", ".join(state.grounded_concepts) or "none"
 
@@ -202,7 +200,7 @@ def answer_synthesis_node(state: LegalQueryState) -> dict:
             draft = getattr(response, "content", str(response)).strip()
             return {
                 "draft_answer": draft,
-                "cited_section_ids": _parse_citations(draft),
+                "cited_section_ids": parse_citations(draft),
             }
         except Exception as exc:  # noqa: BLE001
             last_exc = exc

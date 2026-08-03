@@ -39,7 +39,23 @@ These encode the project's core design. Violating them defeats the purpose of th
 5. **Every citation must be verified against Neo4j** before reaching the user, AND must have been in the retrieval set (the LLM may only cite what it was shown).
 6. **No raw dictionaries between agents.** Use the typed contracts in `agents/state.py` and `agents/graph_state.py`.
 7. **Prompts live as files** in `agents/prompts/`, never as inline strings. The synthesis system prompt is **composed** from `synthesis_base.txt` (the shared, integrity-critical rules — kept in ONE place so they can never drift) plus a persona overlay (`synthesis_citizen.txt` or `synthesis_lawyer.txt`); both halves are files.
-8. **Persona tailors presentation only, never substance.** The selected persona changes the synthesis tone/technicality/structure, how citation markers are *rendered*, and the final-response trailer — it NEVER changes what is retrieved, verified, or allowed to be cited, and it does NOT add an LLM call (rule 1 still holds: exactly three). Removing a *verified* marker from the citizen's visible text is presentation: verification already happened in `output_guardrail_node`, which runs first. Removing an *unverified* marker is rule 5 and is persona-independent.
+8. **Repealed law is never cited, and state law is never cited outside its
+   state.** `data/ontology/act_metadata.json` is the single source of both
+   facts; `ingest/act_metadata_loader.py` mirrors them onto the Act nodes and
+   `graph/queries.py` joins them onto every section it returns. Filtering
+   happens in `graph/traversal.py` **before** confidence scoring and before BFS
+   expansion — filtering later would let a repealed section act as a primary
+   anchor and steer which live sections get retrieved. An Act is only marked
+   repealed when the repealing Act is in the corpus AND the repeal is stated in
+   retrieved text (`repeal_authority` must be a real `section_id`).
+9. **The citation-marker format lives in exactly one place: `agents/citations.py`.**
+   Both the parser (synthesis) and the stripper (final response) import it.
+   Two copies of that regex is one too many — a marker the parser fails to
+   recognise is never verified, and if the stripper misses it too it reaches
+   the user unchecked. This is not hypothetical: sub-section markers
+   (`[IDA_1947_S7(1)]`) matched neither of the two old copies and sailed
+   through unverified. Markers are verified on their BASE section id.
+10. **Persona tailors presentation only, never substance.** The selected persona changes the synthesis tone/technicality/structure, how citation markers are *rendered*, and the final-response trailer — it NEVER changes what is retrieved, verified, or allowed to be cited, and it does NOT add an LLM call (rule 1 still holds: exactly three). Removing a *verified* marker from the citizen's visible text is presentation: verification already happened in `output_guardrail_node`, which runs first. Removing an *unverified* marker is rule 5 and is persona-independent.
 
 ---
 
@@ -79,6 +95,8 @@ legal-graph-rag/
 │   │   ├── synthesis_node.py         # LLM call 3
 │   │   ├── output_guardrail_node.py  # deterministic — citation verify + confidence + disclaimer
 │   │   └── final_response_node.py    # deterministic — assembles final_answer for every exit path
+│   ├── citations.py        # SINGLE source of the [SECTION_ID] marker format —
+│   │                       #   parsing AND stripping (never duplicate this regex)
 │   └── prompts/            # extraction.txt, sufficiency.txt,
 │                           #   synthesis_base.txt (shared integrity rules) +
 │                           #   synthesis_citizen.txt / synthesis_lawyer.txt (persona overlays)
@@ -87,7 +105,19 @@ legal-graph-rag/
 │   ├── schema.py           # node/relationship definitions (single source of truth)
 │   ├── db_connection.py    # Neo4j driver (reads creds from config)
 │   ├── queries.py          # all Cypher (the only place raw Cypher lives)
-│   └── traversal.py        # deterministic BFS traversal
+│   ├── traversal.py        # deterministic BFS traversal + temporal/territorial filters
+│   ├── act_registry.py     # offline reader of act_metadata.json — in-force status,
+│   │                       #   jurisdiction resolution, explicit section-ref parsing
+│   └── ranking.py          # deterministic relevance scoring (BM25 + graph signals)
+│
+├── tools/                  # BUILD-TIME only, never imported at runtime
+│   ├── build_concept_map.py    # rebuilds + validates data/ontology/concept_map.json
+│   ├── section_concept_map.json  # curated section -> concept table (the source)
+│   └── new_concepts.json         # concept definitions added on top of the original 25
+│
+├── tests/
+│   ├── golden_queries.json # 50 queries with expectations
+│   └── verify.py           # end-to-end harness, checks answers vs the raw corpus
 │
 ├── ingest/                 # COMPLETE — DO NOT MODIFY
 │   ├── pdf_parser.py
@@ -115,7 +145,23 @@ extraction → grounding → traversal → sufficiency → [conditional]
 
 **Complete and working:**
 
-- Ingestion layer (`ingest/`) — graph is populated: 5 Acts, 255 Sections, 127 CITES, 25 Concepts, 75 APPLIES_TO.
+- Ingestion layer (`ingest/`) — graph is populated: 5 Acts, 255 Sections, 127 CITES,
+  **45 Concepts, 248 APPLIES_TO, 1 OVERRIDES**. Concept coverage is now
+  **188/217 in-force sections (87%)**, up from 59/255 (23%). The 29 uncovered
+  sections are pure machinery (power to make rules, delegation, protection of
+  action taken in good faith) and PDF artifacts, which carry no answerable rule.
+  Rebuild with `python -m tools.build_concept_map` then
+  `python -m ingest.ontology_loader`.
+- **Temporal + territorial layer** — `data/ontology/act_metadata.json` +
+  `ingest/act_metadata_loader.py`. MWA 1948 is marked repealed by COW 2019 s.69
+  and is suppressed from retrieval; KSEA 1961 is Karnataka-only and is withheld
+  from users in other states. Both suppressions are reported, never silent.
+- **Ranking** (`graph/ranking.py`) — BM25 over the candidate set plus relevance,
+  hop distance, concept-hit count and act priority. The evidence pack is ordered
+  and numbered, and the synthesis prompt tells the model to work down from #1.
+- **Verification harness** (`tests/`) — 50 golden queries run end-to-end against
+  real Neo4j + Gemini, checked against the raw corpus. Latest run: **50/50, 178
+  citations shown, 0 hallucinated, 0 repealed-law citations.**
 - Graph layer (`graph/`) — schema, queries, deterministic traversal.
 - Full agent pipeline, all three LLM calls + both deterministic guardrail nodes:
   - `synthesis_node` (LLM call 3) — verified working; cites only evidence-pack section_ids, short-circuits the empty-retrieval path with no LLM call. **Persona-aware:** the system prompt is `synthesis_base.txt` + the selected persona overlay (citizen = plain-language/reassuring; lawyer = technical/section-by-section).
@@ -127,9 +173,17 @@ extraction → grounding → traversal → sufficiency → [conditional]
 
 **Not built yet (the roadmap):**
 
-- `tests/` — unit (confidence formula, citation stripping, grounding, node contracts) + integration (the §8 standing queries against real Neo4j).
+- Unit tests. `tests/verify.py` is an END-TO-END harness (real Neo4j, real
+  Gemini, ~11 min). There is still no fast offline unit layer for the confidence
+  formula, `agents/citations.py`, grounding, and the node contracts — that
+  should come next, since most of the harness's value could be had in seconds.
+- Case law. `Ruling` / `INTERPRETS` remain defined with no data.
+- Coverage gaps the temporal model now makes visible: `payment_of_wages_act_1936.pdf`
+  sits in `data/acts/` un-ingested, and the Payment of Bonus Act 1965, Equal
+  Remuneration Act 1976, Industrial Relations Code 2020 and Social Security Code
+  2020 are absent. Ingest a repealing Code and its repeal wires up with no code
+  change (see the repeal rule in `act_metadata.json`).
 - `graph/retrieval.py` — optional refactor of `traversal.py` into parameterized `retrieve()` + `verify_sections()`.
-- Clean up `requirements.txt`: it still lists `groq`, `langchain-groq`, and `nemoguardrails`, none of which the runtime uses — the LLM layer is `langchain-google-vertexai` (`ChatVertexAI`, which must be pinned `<4.0.0`; see `agents/llm.py`) and the input/output guardrail logic lives in the pipeline nodes above (NeMo was never wired in). *(The vestigial `guardrails/` folder has already been removed.)*
 
 ---
 
@@ -143,7 +197,12 @@ extraction → grounding → traversal → sufficiency → [conditional]
 - **Confidence formula (deterministic, implemented in `output_guardrail_node`):**
   `confidence = 0.35·concept_coverage + 0.25·seed_strength + 0.20·sufficiency_score + 0.20·citation_validity`
   (weights are `cfg.CONFIDENCE_W_*`). Each factor ∈ [0, 1]:
-  - `concept_coverage` — grounded ÷ extracted concepts (1.0 if no extraction but something grounded).
+  - `concept_coverage` — fraction of EXTRACTED PHRASES that grounded to at least
+    one concept, computed from `state.ungrounded_phrases` (1.0 if no extraction
+    but something grounded). NOT `len(grounded)/len(extracted)`: grounding
+    unions its matches, so that ratio could exceed 1.0 while hiding a phrase
+    that grounded to nothing, and scored 0.5 when two phrases correctly
+    collapsed onto one concept.
   - `seed_strength` — reuses traversal confidence (1.0 primary anchors, 0.6 supporting-only, 0.0 none).
   - `sufficiency_score` — 1.0 sufficient · 0.5 insufficient-but-sections-retrieved · 0.0 none.
   - `citation_validity` — verified ÷ cited citations.
@@ -154,6 +213,30 @@ extraction → grounding → traversal → sufficiency → [conditional]
   For `rejected` / `out_of_domain` / `error` it shows a fixed honest message and NO legal content — even if synthesis ran upstream.
 - **Known gap (intentional, documented):** there is NO early-exit routing yet. Every path flows through `synthesis → output_guardrail → final_response`. Synthesis self-short-circuits (no LLM call) when retrieval is empty — which covers most out-of-domain queries — but a `safety_flag` query that still grounds to real concepts WILL spend a synthesis LLM call whose output `final_response` then discards. Adding a conditional early-exit edge after extraction is a future optimization, not a correctness bug (the safety guarantee holds via final-response precedence).
 - **Exhausted ≠ error:** when the loop exhausts, synthesis still runs but produces an honest partial answer.
+- **Retrieval order is meaningful and the model is told so.** `graph/ranking.py`
+  scores the union across all grounded concepts against the user's query; the
+  evidence pack is emitted numbered (`#1`, `#2`, …) and the synthesis prompt
+  instructs the model to work down from the top. Ranking that the model cannot
+  see does nothing — on "fired without notice after 3 years" the model cited a
+  lower-ranked provision and ignored the #1 operative section until the pack was
+  numbered.
+- **Grounding is a three-stage cascade** (`agents/ontology.py`), all deterministic:
+  (1) substring match on concept names/aliases, (2) **token-overlap paraphrase
+  matching**, unioned with stage 1 rather than used as a fallback, and (3) fuzzy
+  n-gram matching for typos. Stage 2 is what bridges the extraction LLM's own
+  wording to the curated vocabulary — it writes "appeal", not the alias "appeal
+  against an order". Stage 1 must NOT short-circuit stage 2: "punishment for
+  non-payment of wages" contains the alias "payment of wages", so short-circuiting
+  grounded a penalties question to `salary delay`. Grounding deliberately favours
+  recall over precision, because ranking and the cap clean up over-matching while
+  under-matching costs the user an answer outright; the `in_domain` gate, not
+  grounding, is what keeps out-of-domain queries out.
+- **Explicit section references bypass grounding.** "What does Section 25N say?"
+  is a lookup, not a situation: it grounds to `industrial dispute` and never
+  returns 25N. `retrieval_node._direct_section_lookups` resolves such references
+  by id (`graph.act_registry.resolve_section_references`), verifies them against
+  Neo4j, applies the same temporal/territorial filters, and injects them as hop-0
+  primaries.
 
 ---
 
@@ -196,6 +279,39 @@ child runs (`entity_extraction`, `concept_grounding`, `graph_traversal`,
 runs with non-zero token counts. Zero traces almost always means the `.env`
 enable flag is not the literal lowercase `true` (§2). (*`graph_expansion` only
 appears when the sufficiency loop runs.)
+
+**Verification harness — run this after ANY change to retrieval, grounding,
+prompts or the ontology:**
+
+```powershell
+python -m tests.verify                  # all 50 golden queries (~11 min)
+python -m tests.verify --only T04 T09    # a subset, by id
+python -m tests.verify --verbose         # print every final answer
+python -m tests.verify --workers 6       # more parallelism (watch Vertex 429s)
+```
+
+It checks universal invariants on every query (citations real + in the retrieval
+set, no repealed law, no out-of-state law, no unverified marker in the visible
+text, no citations on a safety/domain exit) plus per-query expectations from
+`tests/golden_queries.json`. It also cross-checks every QUANTITY in the prose
+against the cited section text and prints unsourced ones as an advisory — those
+are worth eyeballing, since a fabricated threshold or limitation period passes
+every citation check while being the error a user would actually act on.
+
+Rebuilding the ontology:
+
+```powershell
+python -m tools.build_concept_map --dry-run   # validate + coverage report
+python -m tools.build_concept_map             # write concept_map.json
+python -m ingest.ontology_loader              # push it into Neo4j
+python -m ingest.act_metadata_loader          # Act metadata + OVERRIDES edges
+python -m graph.act_registry                  # offline: in-force + jurisdiction check
+```
+
+The builder FAILS the build if any concept loses its last in-force primary
+anchor, or if a non-state-only concept has only state legislation as primaries —
+both leave a class of user with no answerable law and both were real bugs caught
+this way.
 
 Standing test queries (use these to verify any change):
 

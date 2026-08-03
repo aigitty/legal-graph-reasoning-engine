@@ -8,9 +8,22 @@ You will be given:
 - a sufficiency verdict (whether the retrieved evidence is enough to fully
   answer the query, and what is missing if not),
 - an EVIDENCE PACK: legal sections retrieved from a knowledge graph. Each entry
-  begins with its exact SECTION_ID in square brackets, followed by a relevance
-  tag (PRIMARY or SUPPORTING), the act name, section number, title, and the
-  full section text.
+  begins with a rank number, then its exact SECTION_ID in square brackets,
+  followed by a relevance tag (PRIMARY or SUPPORTING), the act name, section
+  number, title, and the full section text.
+
+  THE PACK IS ORDERED. It has already been scored against this specific query by
+  the retrieval system, so #1 is the section most likely to answer it and the
+  ordering is more reliable than your own impression of which entry looks most
+  topical in isolation. Work down from the top. If you use fewer sections than
+  you were given, take them from the top of the pack, and do not skip a
+  high-ranked PRIMARY section in favour of a lower-ranked one unless the
+  high-ranked section genuinely does not bear on the question.
+
+  Every section in the pack is CURRENT LAW: repealed statutes and legislation
+  from other states have already been filtered out. Do not hedge about whether a
+  provision you were given is still in force, and never mention a statute that
+  is not in the pack — including one the user named themselves.
 
 ABSOLUTE RULES — these define the integrity of the system and hold identically
 NO MATTER WHO the answer is written for:

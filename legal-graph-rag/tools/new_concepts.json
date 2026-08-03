@@ -1,0 +1,258 @@
+[
+  {
+    "concept_id": "wage_claims_recovery",
+    "name": "recovering unpaid wages",
+    "description": "The forums and procedures for claiming and recovering wages, gratuity, bonus or other dues an employer has failed to pay",
+    "aliases": [
+      "recover unpaid wages",
+      "claim unpaid wages",
+      "file a claim for wages",
+      "how do i get my money",
+      "get my dues",
+      "recovery of dues",
+      "money owed by employer",
+      "employer owes me"
+    ]
+  },
+  {
+    "concept_id": "labour_court_tribunal",
+    "name": "labour court and tribunal",
+    "description": "Constitution, powers and procedure of Labour Courts, Industrial Tribunals and National Tribunals, and the awards they make",
+    "aliases": [
+      "labour court",
+      "industrial tribunal",
+      "national tribunal",
+      "labour tribunal",
+      "which court",
+      "go to court against employer",
+      "adjudication"
+    ]
+  },
+  {
+    "concept_id": "conciliation_settlement",
+    "name": "conciliation and settlement",
+    "description": "Conciliation proceedings, conciliation officers, and the binding effect and operation of settlements and awards",
+    "aliases": [
+      "conciliation",
+      "conciliation officer",
+      "settlement with employer",
+      "settle the dispute",
+      "binding settlement",
+      "mediation"
+    ]
+  },
+  {
+    "concept_id": "penalties_offences",
+    "name": "penalties for employer offences",
+    "description": "Punishments, fines and imprisonment prescribed for employers who contravene labour law, and how those offences are prosecuted",
+    "aliases": [
+      "punishment for employer",
+      "penalty for employer",
+      "employer be fined",
+      "employer be punished",
+      "prosecute my employer",
+      "is it a criminal offence",
+      "what happens to the employer"
+    ]
+  },
+  {
+    "concept_id": "inspection_enforcement",
+    "name": "labour inspector",
+    "description": "Appointment and powers of Inspectors and Inspector-cum-Facilitators who enforce labour legislation and inspect establishments",
+    "aliases": [
+      "labour inspector",
+      "inspector-cum-facilitator",
+      "complain to the inspector",
+      "labour officer",
+      "inspection of establishment",
+      "labour department complaint"
+    ]
+  },
+  {
+    "concept_id": "registers_records",
+    "name": "employment records and registers",
+    "description": "The registers, records, returns, muster rolls and notices an employer is required to maintain and display",
+    "aliases": [
+      "maintain registers",
+      "employment records",
+      "muster roll",
+      "wage register",
+      "records employer must keep",
+      "display notices"
+    ]
+  },
+  {
+    "concept_id": "employment_registration",
+    "name": "registration of establishment",
+    "description": "Registration of shops and commercial establishments, appointment orders, and notifying changes or closure to the Inspector",
+    "aliases": [
+      "register the establishment",
+      "registration certificate",
+      "shop registration",
+      "appointment order",
+      "appointment letter"
+    ]
+  },
+  {
+    "concept_id": "night_work_women",
+    "name": "night work for women",
+    "description": "Restrictions on employing women and young persons during night hours",
+    "aliases": [
+      "women night shift",
+      "night shift for women",
+      "women working at night",
+      "young persons at night",
+      "late night duty"
+    ]
+  },
+  {
+    "concept_id": "rest_interval",
+    "name": "rest interval and spreadover",
+    "description": "Compulsory rest intervals during the working day and the maximum spreadover of working hours",
+    "aliases": [
+      "rest interval",
+      "lunch break",
+      "tea break",
+      "break during work",
+      "spreadover",
+      "no breaks at work"
+    ]
+  },
+  {
+    "concept_id": "wage_payment_mode",
+    "name": "how and when wages must be paid",
+    "description": "The wage period, the time limit for paying wages, and the permitted modes of paying wages",
+    "aliases": [
+      "when should i be paid",
+      "wage period",
+      "salary date",
+      "paid in cash",
+      "paid by cheque",
+      "mode of payment of wages",
+      "payday"
+    ]
+  },
+  {
+    "concept_id": "wage_deductions",
+    "name": "deductions from wages",
+    "description": "The deductions an employer may lawfully make from wages, including fines, absence from duty, damage or loss, advances and loans, and the limits on them",
+    "aliases": [
+      "deduction from salary",
+      "deducted my salary",
+      "money cut from wages",
+      "salary cut",
+      "fine imposed by employer",
+      "penalty deducted",
+      "recovery of advance"
+    ]
+  },
+  {
+    "concept_id": "floor_wage",
+    "name": "floor wage",
+    "description": "The floor wage fixed by the Central Government below which no minimum wage may be set",
+    "aliases": [
+      "floor wage",
+      "national minimum wage",
+      "central government wage floor"
+    ]
+  },
+  {
+    "concept_id": "definitions_scope",
+    "name": "who counts as an employee or workman",
+    "description": "Statutory definitions determining who is a workman, employee or employer, and what counts as wages or an industry",
+    "aliases": [
+      "am i a workman",
+      "who is a workman",
+      "definition of employee",
+      "definition of wages",
+      "counted as an employee",
+      "manager or workman",
+      "supervisory role"
+    ]
+  },
+  {
+    "concept_id": "applicability_coverage",
+    "name": "which establishments the law covers",
+    "description": "Which establishments, employees and areas a statute applies to, including thresholds, exemptions and repeals",
+    "aliases": [
+      "does the law apply to me",
+      "does this act apply",
+      "small company",
+      "how many employees",
+      "is my company covered",
+      "exempt from the act",
+      "applicability"
+    ]
+  },
+  {
+    "concept_id": "gratuity_nomination",
+    "name": "gratuity nomination",
+    "description": "Nominating who receives gratuity, and payment of gratuity on the death of an employee",
+    "aliases": [
+      "gratuity nomination",
+      "nominee for gratuity",
+      "gratuity after death",
+      "gratuity to family"
+    ]
+  },
+  {
+    "concept_id": "appeal_review",
+    "name": "appeal against an order",
+    "description": "Appeals against orders passed by authorities under labour legislation, and the time limits for filing them",
+    "aliases": [
+      "appeal against the order",
+      "how do i appeal",
+      "challenge the order",
+      "appellate authority"
+    ]
+  },
+  {
+    "concept_id": "contracting_out",
+    "name": "agreements that waive legal rights",
+    "description": "The rule that an agreement by which an employee relinquishes a statutory right is void, and the overriding effect of labour legislation",
+    "aliases": [
+      "signed away my rights",
+      "agreement to take less",
+      "waive my rights",
+      "contract says otherwise",
+      "employment contract overrides",
+      "i signed a paper"
+    ]
+  },
+  {
+    "concept_id": "grievance_redressal",
+    "name": "raising a workplace grievance",
+    "description": "Grievance Redressal Machinery inside an establishment and representation of parties in proceedings",
+    "aliases": [
+      "grievance redressal",
+      "raise a grievance",
+      "internal complaint",
+      "complain at work",
+      "represented by a union"
+    ]
+  },
+  {
+    "concept_id": "arbitration",
+    "name": "voluntary arbitration",
+    "description": "Voluntary reference of an industrial dispute to arbitration by written agreement between employer and workmen",
+    "aliases": [
+      "arbitration",
+      "arbitrator",
+      "refer to arbitration",
+      "settle outside court"
+    ]
+  },
+  {
+    "concept_id": "bonus_computation",
+    "name": "how bonus is calculated",
+    "description": "Computation of gross profits, available and allocable surplus, set-on and set-off, and the deductions applied in working out bonus",
+    "aliases": [
+      "how is bonus calculated",
+      "bonus calculation",
+      "allocable surplus",
+      "available surplus",
+      "gross profits",
+      "set on and set off"
+    ]
+  }
+]

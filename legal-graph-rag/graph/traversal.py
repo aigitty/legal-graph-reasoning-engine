@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
-from typing import Any
 
+from graph import act_registry
 from graph.queries import (
     get_sections_for_concept,
     get_sections_for_exact_concept,
@@ -25,6 +25,63 @@ class TraversalResult:
     hops_taken: int
     confidence: float
     is_empty: bool
+    # act_id -> why its sections were withheld (repealed / wrong state).
+    suppressed_acts: dict[str, str] = field(default_factory=dict)
+
+
+def _is_section(node: dict) -> bool:
+    """
+    True when a neighbour row is a Section.
+
+    get_neighbors returns every adjacent node, which includes the Act via
+    HAS_SECTION and Concept nodes via APPLIES_TO. Those carry no section_id, so
+    checking for one identifies Sections without relying on labels (which the
+    neighbour query does not return).
+    """
+    return bool(_section_id(node))
+
+
+def _suppression_reason(
+    section: dict,
+    jurisdiction: str | None,
+    drop_repealed: bool,
+    filter_jurisdiction: bool,
+) -> str | None:
+    """
+    Return why this section must be withheld, or None to keep it.
+
+    Two independent filters, both deterministic and both applied BEFORE the
+    section can reach the evidence pack:
+
+      TEMPORAL     the owning Act has been repealed. Citing it would present
+                   superseded law as operative.
+      TERRITORIAL  the owning Act is state legislation and the user named a
+                   DIFFERENT state. Karnataka's Shops Act does not govern an
+                   employee in Maharashtra.
+
+    A user who named NO state keeps state law (dropping it would make weekly
+    holiday / annual leave unanswerable) — it is deprioritised and flagged
+    instead, in agents/nodes/retrieval_node.py.
+    """
+    act_id = str(section.get("act_id") or "")
+
+    if drop_repealed and str(section.get("in_force_status") or "in_force") == "repealed":
+        note = act_registry.repeal_note(act_id)
+        return note or f"The {act_id} has been repealed."
+
+    if filter_jurisdiction and jurisdiction:
+        act_jurisdiction = str(section.get("jurisdiction") or act_registry.CENTRAL)
+        if (
+            act_jurisdiction != act_registry.CENTRAL
+            and act_jurisdiction != jurisdiction
+        ):
+            act_name = str(section.get("act_name") or act_id)
+            return (
+                f"The {act_name} applies only in {act_jurisdiction}, "
+                f"and this query concerns {jurisdiction}."
+            )
+
+    return None
 
 
 def _section_id(section: dict) -> str | None:
@@ -39,8 +96,12 @@ def _sort_section_key(section: dict) -> tuple[str, str]:
 
 
 def _find_anchors(
-    concept_name: str, exact: bool = False
-) -> tuple[list[dict], list[dict], list[str]]:
+    concept_name: str,
+    exact: bool = False,
+    jurisdiction: str | None = None,
+    drop_repealed: bool = True,
+    filter_jurisdiction: bool = True,
+) -> tuple[list[dict], list[dict], list[str], dict[str, str]]:
     """
     Find primary and supporting section anchors for a concept.
 
@@ -49,12 +110,23 @@ def _find_anchors(
         exact: When True, match the concept by exact canonical name
                (agent layer already grounded it). When False, use the
                looser CONTAINS matching (main.py / raw-text callers).
+        jurisdiction: Resolved jurisdiction of the query ("Karnataka",
+               "Central", ...) or None when the user named no state.
+        drop_repealed: Withhold sections whose Act has been repealed.
+        filter_jurisdiction: Withhold state legislation from another state.
 
     Returns:
         A tuple containing:
         - primary_sections: Section nodes marked as primary anchors.
         - supporting_sections: Section nodes marked as supporting anchors.
         - concepts_matched: Concept names matched in the graph.
+        - suppressed_acts: act_id -> reason, for anchors that were withheld.
+
+    Filtering happens HERE, before confidence scoring and before BFS, and that
+    placement is load-bearing. Filtering later would let a repealed section act
+    as a primary anchor: it would score traversal confidence 1.0 and seed the
+    CITES expansion, so suppressed law would still steer which live sections got
+    retrieved.
     """
     rows = (
         get_sections_for_exact_concept(concept_name)
@@ -65,11 +137,27 @@ def _find_anchors(
     primary_sections: list[dict] = []
     supporting_sections: list[dict] = []
     concepts_matched: list[str] = []
+    suppressed_acts: dict[str, str] = {}
 
     for row in rows:
         section = row.get("section", row)
+
+        reason = _suppression_reason(
+            section, jurisdiction, drop_repealed, filter_jurisdiction
+        )
+        if reason:
+            act_id = str(section.get("act_id") or "")
+            suppressed_acts.setdefault(act_id, reason)
+            continue
+
+        # NOTE: "relevance" is the key graph/queries.py actually returns (it is
+        # the APPLIES_TO edge property). It was missing from this chain, so every
+        # anchor fell through to `primary` — which made _score_confidence report
+        # 1.0 whenever anything matched at all, and seeded the CITES expansion
+        # from supporting sections as though they were operative provisions.
         relation_type = (
-            row.get("match_type")
+            row.get("relevance")
+            or row.get("match_type")
             or row.get("relationship_type")
             or row.get("anchor_type")
             or row.get("type")
@@ -85,31 +173,40 @@ def _find_anchors(
         else:
             primary_sections.append(section)
 
-    return primary_sections, supporting_sections, concepts_matched
+    return primary_sections, supporting_sections, concepts_matched, suppressed_acts
 
 
 def _expand_from_anchors(
     anchor_section_ids: list[str],
     max_hops: int,
-) -> tuple[list[dict], int]:
+    jurisdiction: str | None = None,
+    drop_repealed: bool = True,
+    filter_jurisdiction: bool = True,
+) -> tuple[list[dict], int, dict[str, str]]:
     """
     Expand from primary anchor sections using BFS over CITES relationships.
 
     Parameters:
         anchor_section_ids: Section IDs used as traversal starting points.
         max_hops: Maximum number of expansion rounds.
+        jurisdiction / drop_repealed / filter_jurisdiction: same meaning as in
+            _find_anchors — suppressed sections are neither returned NOR walked
+            through, so repealed law cannot act as a bridge to other sections.
 
     Returns:
         A tuple containing:
         - expanded_sections: Newly discovered Section nodes, excluding anchors.
+          Each carries a `hop_distance` key recording how far out it was found.
         - hops_taken: Number of hop rounds actually performed.
+        - suppressed_acts: act_id -> reason, for neighbours that were withheld.
     """
     if max_hops <= 0 or not anchor_section_ids:
-        return [], 0
+        return [], 0, {}
 
     visited = set(anchor_section_ids)
     frontier = set(anchor_section_ids)
     expanded_sections: list[dict] = []
+    suppressed_acts: dict[str, str] = {}
     hops_taken = 0
 
     for hop in range(1, max_hops + 1):
@@ -120,10 +217,15 @@ def _expand_from_anchors(
             neighbors = get_neighbors(section_id) or []
 
             for neighbor in neighbors:
-                neighbor_section = neighbor.get("node", neighbor)
-                labels = neighbor_section.get("labels", [])
+                # Expansion is defined over CITES (section cross-references).
+                # get_neighbors also returns the owning Act via HAS_SECTION and
+                # Concept nodes via APPLIES_TO; walking those would jump to an
+                # unrelated part of the graph.
+                if str(neighbor.get("rel_type") or "") != "CITES":
+                    continue
 
-                if labels and "Section" not in labels:
+                neighbor_section = neighbor.get("node", neighbor)
+                if not _is_section(neighbor_section):
                     continue
 
                 neighbor_id = _section_id(neighbor_section)
@@ -131,8 +233,20 @@ def _expand_from_anchors(
                     continue
 
                 visited.add(neighbor_id)
+
+                reason = _suppression_reason(
+                    neighbor_section, jurisdiction, drop_repealed, filter_jurisdiction
+                )
+                if reason:
+                    suppressed_acts.setdefault(
+                        str(neighbor_section.get("act_id") or ""), reason
+                    )
+                    continue
+
+                enriched = dict(neighbor_section)
+                enriched["hop_distance"] = hop
                 next_frontier.add(neighbor_id)
-                new_sections_this_hop.append(neighbor_section)
+                new_sections_this_hop.append(enriched)
 
         logger.debug(
             "Traversal hop %s completed. New sections found: %s",
@@ -147,7 +261,7 @@ def _expand_from_anchors(
         frontier = next_frontier
         hops_taken = hop
 
-    return expanded_sections, hops_taken
+    return expanded_sections, hops_taken, suppressed_acts
 
 
 def _score_confidence(primary_count: int, supporting_count: int) -> float:
@@ -225,6 +339,9 @@ def traverse(
     max_hops: int = 2,
     max_sections: int = 15,
     exact: bool = False,
+    jurisdiction: str | None = None,
+    drop_repealed: bool = True,
+    filter_jurisdiction: bool = True,
 ) -> TraversalResult:
     """
     Traverse the legal knowledge graph for one plain-language legal concept.
@@ -232,15 +349,29 @@ def traverse(
     Parameters:
         concept_name: Plain-language legal concept, such as "wrongful termination".
         max_hops: Maximum CITES expansion depth. Defaults to 2.
+        max_sections: Cap on the returned section count.
+        exact: Match the concept by exact canonical name (agent layer) rather
+            than the looser CONTAINS matching (main.py / raw-text callers).
+        jurisdiction: Resolved jurisdiction of the query, or None if the user
+            named no state. State legislation from a DIFFERENT state is withheld.
+        drop_repealed: Withhold sections belonging to a repealed Act.
+        filter_jurisdiction: Enable the territorial filter.
 
     Returns:
         TraversalResult containing anchors, expanded sections, CITES edges,
-        matched concepts, hop count, confidence, and empty-result status.
+        matched concepts, hop count, confidence, empty-result status, and the
+        acts that were withheld with the reason for each.
     """
     concept_name = concept_name.strip()
 
-    primary_sections, supporting_sections, concepts_matched = _find_anchors(
-        concept_name, exact=exact
+    primary_sections, supporting_sections, concepts_matched, suppressed_acts = (
+        _find_anchors(
+            concept_name,
+            exact=exact,
+            jurisdiction=jurisdiction,
+            drop_repealed=drop_repealed,
+            filter_jurisdiction=filter_jurisdiction,
+        )
     )
 
     confidence = _score_confidence(
@@ -250,8 +381,9 @@ def traverse(
 
     if not primary_sections and not supporting_sections:
         logger.info(
-            "Traversal completed for concept='%s'. No anchors found.",
+            "Traversal completed for concept='%s'. No anchors found%s",
             concept_name,
+            f" ({len(suppressed_acts)} act(s) suppressed)." if suppressed_acts else ".",
         )
         return TraversalResult(
             concept_queried=concept_name,
@@ -263,7 +395,13 @@ def traverse(
             hops_taken=0,
             confidence=0.0,
             is_empty=True,
+            suppressed_acts=suppressed_acts,
         )
+
+    # Anchors are hop 0 by definition — they were reached through APPLIES_TO,
+    # not by following a citation.
+    for section in primary_sections + supporting_sections:
+        section["hop_distance"] = 0
 
     primary_anchor_ids = [
         section_id
@@ -271,10 +409,15 @@ def traverse(
         if (section_id := _section_id(section))
     ]
 
-    expanded_sections, hops_taken = _expand_from_anchors(
+    expanded_sections, hops_taken, expansion_suppressed = _expand_from_anchors(
         anchor_section_ids=primary_anchor_ids,
         max_hops=max_hops,
+        jurisdiction=jurisdiction,
+        drop_repealed=drop_repealed,
+        filter_jurisdiction=filter_jurisdiction,
     )
+    for act_id, reason in expansion_suppressed.items():
+        suppressed_acts.setdefault(act_id, reason)
 
     expanded_sections = sorted(
         _deduplicate_sections(expanded_sections),
@@ -300,36 +443,46 @@ def traverse(
         if (section_id := _section_id(section))
     }
 
+    # Merge in the richer subgraph row, but carry the traversal provenance
+    # across: the subgraph query knows nothing about how far out we walked, and
+    # losing hop_distance here would blind the ranker (graph/ranking.py) to the
+    # difference between an anchor and a section three citations away.
     all_sections: list[dict] = []
     for section in all_sections_seed:
         section_id = _section_id(section)
-        all_sections.append(subgraph_section_by_id.get(section_id, section))
+        merged = dict(subgraph_section_by_id.get(section_id, section))
+        merged["hop_distance"] = int(section.get("hop_distance", 0) or 0)
+        all_sections.append(merged)
 
     all_sections = _deduplicate_sections(all_sections)
+
+    # Safety valve on context size. The REAL relevance ordering happens in
+    # agents/nodes/retrieval_node.py, which ranks the union across every
+    # grounded concept against the user's actual query text — something this
+    # function cannot do, since it only ever sees one concept name. So the trim
+    # here just has to be principled and lossless where it matters: keep every
+    # anchor, then take the nearest hops.
+    if len(all_sections) > max_sections:
+        anchor_ids = {
+            section_id
+            for section in anchor_sections
+            if (section_id := _section_id(section))
+        }
+        anchors_first = [s for s in all_sections if _section_id(s) in anchor_ids]
+        expanded_rest = sorted(
+            (s for s in all_sections if _section_id(s) not in anchor_ids),
+            key=lambda s: (int(s.get("hop_distance", 0) or 0), _sort_section_key(s)),
+        )
+        remaining = max(0, max_sections - len(anchors_first))
+        all_sections = _deduplicate_sections(
+            anchors_first[:max_sections] + expanded_rest[:remaining]
+        )
 
     valid_section_ids = {
         section_id
         for section in all_sections
         if (section_id := _section_id(section))
     }
-
-    # Cap total sections passed to agent to prevent context overflow
-    if len(all_sections) > max_sections:
-        # keep all anchors, trim expanded sections
-        all_sections = anchor_sections[:max_sections] + [
-            s for s in expanded_sections
-            if s not in anchor_sections
-        ][:max(0, max_sections - len(anchor_sections))]
-
-        all_sections = _deduplicate_sections(all_sections)
-
-        # IMPORTANT:
-        # recompute valid ids after trimming
-        valid_section_ids = {
-            section_id
-            for section in all_sections
-            if (section_id := _section_id(section))
-        }
 
     cites_edges = _filter_cites_edges(raw_edges, valid_section_ids)
 
@@ -353,11 +506,11 @@ def traverse(
         hops_taken=hops_taken,
         confidence=confidence,
         is_empty=False,
+        suppressed_acts=suppressed_acts,
     )
 
 
 if __name__ == "__main__":
-    import json
 
     test_concepts = [
         "wrongful termination",

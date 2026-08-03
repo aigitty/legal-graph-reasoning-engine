@@ -11,17 +11,22 @@ against Neo4j before display. The LLM never invents a section.
 
 ## What it covers
 
-Five Indian labour statutes currently ingested:
+Five Indian labour statutes ingested; **four currently in force**:
 
-| Act | Short ID |
-|---|---|
-| Industrial Disputes Act, 1947 | `IDA_1947` |
-| Payment of Gratuity Act, 1972 | `PGA_1972` |
-| Minimum Wages Act, 1948 | `MWA_1948` |
-| Karnataka Shops and Establishments Act, 1961 | `KSEA_1961` |
-| Code on Wages, 2019 | `COW_2019` |
+| Act | Short ID | Status |
+|---|---|---|
+| Industrial Disputes Act, 1947 | `IDA_1947` | In force |
+| Payment of Gratuity Act, 1972 | `PGA_1972` | In force |
+| Code on Wages, 2019 | `COW_2019` | In force |
+| Karnataka Shops and Commercial Establishments Act, 1961 | `KSEA_1961` | In force (Karnataka only) |
+| Minimum Wages Act, 1948 | `MWA_1948` | **Repealed** by Code on Wages, 2019 §69 |
 
-**255 Sections · 127 CITES edges · 25 Concepts · 75 APPLIES_TO edges**
+The engine tracks in-force status and territorial reach for every Act
+(`data/ontology/act_metadata.json`) and enforces both deterministically at
+retrieval time: `MWA_1948` is never cited (superseded by `COW_2019`), and
+`KSEA_1961` is only cited to users in Karnataka.
+
+**255 Sections · 127 CITES edges · 45 Concepts · 248 APPLIES_TO edges · 1 OVERRIDES edge**
 
 ---
 

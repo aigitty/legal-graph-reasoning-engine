@@ -132,13 +132,24 @@ def _concept_coverage(state: LegalQueryState) -> float:
     """
     How much of the query's legal intent was grounded to known concepts.
 
-    With extracted concepts present: fraction of them that grounded to a
-    canonical concept. Without extraction: 1.0 if anything grounded, else 0.0.
+    With extracted concepts present: the fraction of EXTRACTED PHRASES that
+    grounded to at least one canonical concept. Without extraction: 1.0 if
+    anything grounded, else 0.0.
+
+    This used to be computed as len(grounded_concepts) / len(extracted), which
+    measured the wrong thing in both directions. Grounding unions its matches
+    across phrases, so one phrase hitting three concepts made the ratio exceed
+    1.0 (silently clamped) and masked a second phrase that grounded to nothing;
+    conversely two phrases collapsing onto the same concept scored 0.5 despite
+    full coverage. Counting ungrounded phrases measures coverage directly.
     """
     grounded = state.grounded_concepts or []
+
     if state.extraction is not None and state.extraction.legal_concepts:
         extracted = state.extraction.legal_concepts
-        return _clamp(len(grounded) / len(extracted))
+        ungrounded = len(state.ungrounded_phrases)
+        return _clamp((len(extracted) - ungrounded) / len(extracted))
+
     return 1.0 if grounded else 0.0
 
 

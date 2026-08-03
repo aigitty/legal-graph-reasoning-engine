@@ -40,17 +40,14 @@ happened in output_guardrail_node, which runs before this node):
 from __future__ import annotations
 
 import logging
-import re
 
+from agents.citations import render_markers
 from agents.graph_state import LegalQueryState
 from agents.persona import CITIZEN, LAWYER, normalize_persona
 from config import cfg
+from graph import act_registry
 
 logger = logging.getLogger(__name__)
-
-# Same permissive marker shape used by synthesis_node, so we strip exactly what
-# it may have emitted.
-_CITATION_RE = re.compile(r"\[([A-Z0-9][A-Z0-9_/.\-]{2,})\]")
 
 _SAFE_FALLBACK = (
     "The system was unable to assemble a final answer for this query due to an "
@@ -58,22 +55,19 @@ _SAFE_FALLBACK = (
     "Please try again."
 )
 
-_SCOPE_LINE = (
-    "This engine only answers questions about Indian employment and labour law "
-    "as covered by the Industrial Disputes Act 1947, the Payment of Gratuity Act "
-    "1972, the Minimum Wages Act 1948, the Karnataka Shops and Establishments Act "
-    "1961, and the Code on Wages 2019."
-)
+# Terminal statuses that show a fixed honest message and NO legal content.
+# Citations and confidence are cleared for these (see final_response_node).
+_NO_CONTENT_STATUSES = frozenset({"error", "rejected", "out_of_domain"})
+
+# DERIVED from act_metadata rather than hardcoded, so the scope we advertise
+# always matches the scope we will actually cite from. act_registry reads a local
+# JSON file — no Neo4j, no LLM — so this node stays pure formatting.
+_SCOPE_LINE = act_registry.scope_sentence()
 
 
 # ---------------------------------------------------------------------------
 # Status resolution
 # ---------------------------------------------------------------------------
-
-def _looks_like_citation(token: str) -> bool:
-    # Mirrors synthesis_node: real section ids carry a digit, underscore, or slash.
-    return any(ch.isdigit() for ch in token) or "_" in token or "/" in token
-
 
 def _resolve_status(state: LegalQueryState) -> str:
     """Apply CLAUDE.md section-7 precedence over the guardrail's status."""
@@ -92,33 +86,9 @@ def _resolve_status(state: LegalQueryState) -> str:
 # Shared formatting helpers
 # ---------------------------------------------------------------------------
 
-def _clean_spacing(text: str) -> str:
-    """Tidy the gaps a removed marker leaves behind (" ," -> ",", double spaces)."""
-    text = re.sub(r"[ \t]+([,.;:!?)\]])", r"\1", text)
-    text = re.sub(r"\(\s*\)", "", text)
-    text = re.sub(r"[ \t]{2,}", " ", text)
-    return text.strip()
-
-
-def _render_markers(text: str, verified: set[str], drop_verified: bool) -> str:
-    """
-    Rewrite the inline citation markers in the synthesized draft.
-
-    Unverified markers are ALWAYS removed — that is the rule-5 guarantee and it
-    does not depend on persona. `drop_verified` additionally removes the ones
-    that passed, which is what the citizen persona wants (they have already been
-    checked upstream; they are just unreadable). Non-citation brackets such as
-    [PRIMARY] are left untouched.
-    """
-    def _replace(match: re.Match) -> str:
-        token = match.group(1)
-        if not _looks_like_citation(token):
-            return match.group(0)  # not a citation marker — leave it alone
-        if token not in verified:
-            return ""
-        return "" if drop_verified else match.group(0)
-
-    return _clean_spacing(_CITATION_RE.sub(_replace, text))
+# Marker rendering lives in agents/citations.py, shared with synthesis_node's
+# parser, so the two can never disagree about what counts as a citation.
+_render_markers = render_markers
 
 
 def _confidence_word(score: float, partial: bool) -> str:
@@ -281,13 +251,31 @@ def final_response_node(state: LegalQueryState) -> dict:
         status = _resolve_status(state)
         persona = normalize_persona(state.persona)
 
-        if status == "error":
-            final_answer = _format_error(state)
-        elif status == "rejected":
-            final_answer = _format_rejected(state)
-        elif status == "out_of_domain":
-            final_answer = _format_out_of_domain(state)
-        elif status == "insufficient_evidence":
+        if status in _NO_CONTENT_STATUSES:
+            if status == "error":
+                final_answer = _format_error(state)
+            elif status == "rejected":
+                final_answer = _format_rejected(state)
+            else:
+                final_answer = _format_out_of_domain(state)
+
+            # The fixed message above already carries no legal content, but the
+            # CITATIONS THEMSELVES must be dropped from the state too, not just
+            # from the rendered text. api/routes/query.py returns
+            # verified_section_ids straight to the caller, so leaving them set
+            # would hand an API consumer the section list for a query we just
+            # refused to answer — the guardrail's work undone at the boundary.
+            # The confidence score goes with them: it scores an answer that is
+            # not being given.
+            return {
+                "status": status,
+                "final_answer": final_answer,
+                "verified_section_ids": [],
+                "confidence": 0.0,
+                "confidence_factors": {},
+            }
+
+        if status == "insufficient_evidence":
             final_answer = _format_answer(state, partial=True, persona=persona)
         else:  # "ok"
             final_answer = _format_answer(state, partial=False, persona=persona)

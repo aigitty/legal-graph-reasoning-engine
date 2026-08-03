@@ -10,13 +10,39 @@
       "unlawful termination",
       "terminated illegally",
       "dismissed unfairly",
-      "wrongfully dismissed"
+      "wrongfully dismissed",
+      "sacked",
+      "let go from",
+      "removed from service",
+      "terminated me",
+      "fired me",
+      "lost my job"
     ],
     "maps_to": [
-      {"section_id": "IDA_1947_S25F", "relevance": "primary"},
-      {"section_id": "IDA_1947_S2A",  "relevance": "primary"},
-      {"section_id": "IDA_1947_S11A", "relevance": "supporting"},
-      {"section_id": "IDA_1947_S25G", "relevance": "supporting"}
+      {
+        "section_id": "IDA_1947_S25F",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S2A",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S39",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S11A",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S17B",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25G",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -31,11 +57,30 @@
       "redundancy"
     ],
     "maps_to": [
-      {"section_id": "IDA_1947_S25F",  "relevance": "primary"},
-      {"section_id": "IDA_1947_S25G",  "relevance": "primary"},
-      {"section_id": "IDA_1947_S25H",  "relevance": "supporting"},
-      {"section_id": "IDA_1947_S25N",  "relevance": "supporting"},
-      {"section_id": "IDA_1947_S25FFF","relevance": "supporting"}
+      {
+        "section_id": "IDA_1947_S25F",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25G",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25FFF",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25H",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25N",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25Q",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -51,10 +96,22 @@
       "resignation notice"
     ],
     "maps_to": [
-      {"section_id": "IDA_1947_S25F",   "relevance": "primary"},
-      {"section_id": "IDA_1947_S25FFA", "relevance": "primary"},
-      {"section_id": "IDA_1947_S25N",   "relevance": "supporting"},
-      {"section_id": "KSEA_1961_S39",   "relevance": "supporting"}
+      {
+        "section_id": "IDA_1947_S25F",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25FFA",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25N",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S39",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -66,12 +123,23 @@
       "termination pay",
       "compensation on retrenchment",
       "15 days wages",
-      "separation pay"
+      "separation pay",
+      "severance",
+      "compensation for job loss"
     ],
     "maps_to": [
-      {"section_id": "IDA_1947_S25F",   "relevance": "primary"},
-      {"section_id": "IDA_1947_S25N",   "relevance": "supporting"},
-      {"section_id": "IDA_1947_S25FFF", "relevance": "supporting"}
+      {
+        "section_id": "IDA_1947_S25F",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25FFF",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25N",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -84,13 +152,54 @@
       "gratuity claim",
       "gratuity on resignation",
       "gratuity after 5 years",
-      "end of service payment"
+      "end of service payment",
+      "retirement payment"
     ],
     "maps_to": [
-      {"section_id": "PGA_1972_S4",  "relevance": "primary"},
-      {"section_id": "PGA_1972_S2A", "relevance": "primary"},
-      {"section_id": "PGA_1972_S7",  "relevance": "supporting"},
-      {"section_id": "PGA_1972_S8",  "relevance": "supporting"}
+      {
+        "section_id": "PGA_1972_S2A",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "PGA_1972_S4",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "PGA_1972_S7",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "PGA_1972_S1",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "PGA_1972_S13",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "PGA_1972_S13A",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "PGA_1972_S2",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "PGA_1972_S3",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "PGA_1972_S4A",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "PGA_1972_S6",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "PGA_1972_S8",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -105,9 +214,18 @@
       "continuous employment"
     ],
     "maps_to": [
-      {"section_id": "PGA_1972_S2A", "relevance": "primary"},
-      {"section_id": "IDA_1947_S25B","relevance": "primary"},
-      {"section_id": "PGA_1972_S4",  "relevance": "supporting"}
+      {
+        "section_id": "IDA_1947_S25B",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "PGA_1972_S2A",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "PGA_1972_S4",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -123,11 +241,54 @@
       "not paying minimum wage"
     ],
     "maps_to": [
-      {"section_id": "MWA_1948_S3",  "relevance": "primary"},
-      {"section_id": "MWA_1948_S12", "relevance": "primary"},
-      {"section_id": "MWA_1948_S22", "relevance": "supporting"},
-      {"section_id": "COW_2019_S5",  "relevance": "supporting"},
-      {"section_id": "COW_2019_S6",  "relevance": "supporting"}
+      {
+        "section_id": "COW_2019_S5",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S6",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "MWA_1948_S12",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "MWA_1948_S3",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S10",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S11",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S12",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S42",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S7",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S8",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S9",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "MWA_1948_S22",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -139,12 +300,23 @@
       "overtime wages",
       "extra hours",
       "double wages",
-      "working beyond hours"
+      "working beyond hours",
+      "extra hours pay",
+      "worked overtime"
     ],
     "maps_to": [
-      {"section_id": "MWA_1948_S14", "relevance": "primary"},
-      {"section_id": "KSEA_1961_S8", "relevance": "primary"},
-      {"section_id": "COW_2019_S14", "relevance": "supporting"}
+      {
+        "section_id": "COW_2019_S14",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S8",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "MWA_1948_S14",
+        "relevance": "primary"
+      }
     ]
   },
   {
@@ -159,10 +331,30 @@
       "lay off compensation"
     ],
     "maps_to": [
-      {"section_id": "IDA_1947_S25C", "relevance": "primary"},
-      {"section_id": "IDA_1947_S25M", "relevance": "primary"},
-      {"section_id": "IDA_1947_S25A", "relevance": "supporting"},
-      {"section_id": "IDA_1947_S25E", "relevance": "supporting"}
+      {
+        "section_id": "IDA_1947_S25C",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25M",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25A",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25D",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25E",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25Q",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -176,12 +368,42 @@
       "salary pending",
       "unpaid wages",
       "wages not received",
-      "payment of wages"
+      "payment of wages",
+      "hasn't paid me",
+      "hasnt paid me",
+      "has not paid me",
+      "not been paid",
+      "not paid my salary",
+      "no salary",
+      "withholding my salary",
+      "owe me wages",
+      "owes me salary"
     ],
     "maps_to": [
-      {"section_id": "COW_2019_S17", "relevance": "primary"},
-      {"section_id": "COW_2019_S15", "relevance": "supporting"},
-      {"section_id": "COW_2019_S45", "relevance": "supporting"}
+      {
+        "section_id": "COW_2019_S17",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S15",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S16",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S43",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S45",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S18",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -196,9 +418,18 @@
       "wages deducted unfairly"
     ],
     "maps_to": [
-      {"section_id": "COW_2019_S18", "relevance": "primary"},
-      {"section_id": "COW_2019_S19", "relevance": "supporting"},
-      {"section_id": "COW_2019_S21", "relevance": "supporting"}
+      {
+        "section_id": "COW_2019_S18",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S19",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S21",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -210,13 +441,35 @@
       "bonus eligibility",
       "bonus not paid",
       "profit sharing",
-      "performance bonus"
+      "performance bonus",
+      "diwali bonus",
+      "yearly bonus"
     ],
     "maps_to": [
-      {"section_id": "COW_2019_S26", "relevance": "primary"},
-      {"section_id": "COW_2019_S29", "relevance": "supporting"},
-      {"section_id": "COW_2019_S31", "relevance": "supporting"},
-      {"section_id": "COW_2019_S39", "relevance": "supporting"}
+      {
+        "section_id": "COW_2019_S26",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S27",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S29",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S31",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S39",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S41",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -231,10 +484,26 @@
       "illegal strike"
     ],
     "maps_to": [
-      {"section_id": "IDA_1947_S22", "relevance": "primary"},
-      {"section_id": "IDA_1947_S23", "relevance": "primary"},
-      {"section_id": "IDA_1947_S24", "relevance": "supporting"},
-      {"section_id": "IDA_1947_S26", "relevance": "supporting"}
+      {
+        "section_id": "IDA_1947_S22",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S23",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S24",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S26",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -248,9 +517,18 @@
       "establishment shut by employer"
     ],
     "maps_to": [
-      {"section_id": "IDA_1947_S22", "relevance": "primary"},
-      {"section_id": "IDA_1947_S23", "relevance": "primary"},
-      {"section_id": "IDA_1947_S24", "relevance": "supporting"}
+      {
+        "section_id": "IDA_1947_S22",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S23",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S24",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -262,13 +540,38 @@
       "establishment closed",
       "business closed down",
       "plant closure",
-      "undertaking closed"
+      "undertaking closed",
+      "closing down",
+      "closing the factory",
+      "shutting down",
+      "shut down the factory",
+      "closure of undertaking"
     ],
     "maps_to": [
-      {"section_id": "IDA_1947_S25FFA", "relevance": "primary"},
-      {"section_id": "IDA_1947_S25O",   "relevance": "primary"},
-      {"section_id": "IDA_1947_S25FFF", "relevance": "supporting"},
-      {"section_id": "IDA_1947_S25R",   "relevance": "supporting"}
+      {
+        "section_id": "IDA_1947_S25FFA",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25O",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25FFF",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25P",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25R",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S30A",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -283,7 +586,10 @@
       "acquisition"
     ],
     "maps_to": [
-      {"section_id": "IDA_1947_S25FF", "relevance": "primary"}
+      {
+        "section_id": "IDA_1947_S25FF",
+        "relevance": "primary"
+      }
     ]
   },
   {
@@ -297,8 +603,14 @@
       "victimised for union membership"
     ],
     "maps_to": [
-      {"section_id": "IDA_1947_S25T", "relevance": "primary"},
-      {"section_id": "IDA_1947_S25U", "relevance": "supporting"}
+      {
+        "section_id": "IDA_1947_S25T",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25U",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -312,9 +624,26 @@
       "employer employee conflict"
     ],
     "maps_to": [
-      {"section_id": "IDA_1947_S2",  "relevance": "primary"},
-      {"section_id": "IDA_1947_S2A", "relevance": "primary"},
-      {"section_id": "IDA_1947_S10", "relevance": "supporting"}
+      {
+        "section_id": "IDA_1947_S2",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S2A",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S46",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S10",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S35",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -326,12 +655,40 @@
       "daily working hours",
       "weekly hours",
       "excess working hours",
-      "made to work extra hours"
+      "made to work extra hours",
+      "how many hours",
+      "long hours",
+      "shift length"
     ],
     "maps_to": [
-      {"section_id": "KSEA_1961_S7",  "relevance": "primary"},
-      {"section_id": "MWA_1948_S13",  "relevance": "primary"},
-      {"section_id": "COW_2019_S13",  "relevance": "supporting"}
+      {
+        "section_id": "COW_2019_S13",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S7",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "MWA_1948_S13",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S10",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S10",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S11",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S9",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -346,7 +703,10 @@
       "no weekly holiday"
     ],
     "maps_to": [
-      {"section_id": "KSEA_1961_S12", "relevance": "primary"}
+      {
+        "section_id": "KSEA_1961_S12",
+        "relevance": "primary"
+      }
     ]
   },
   {
@@ -358,11 +718,24 @@
       "privilege leave",
       "annual paid leave",
       "leave not granted",
-      "leave encashment"
+      "leave encashment",
+      "paid leave",
+      "leave with wages",
+      "holiday entitlement"
     ],
     "maps_to": [
-      {"section_id": "KSEA_1961_S15", "relevance": "primary"},
-      {"section_id": "KSEA_1961_S16", "relevance": "supporting"}
+      {
+        "section_id": "KSEA_1961_S15",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S16",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S17",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -375,7 +748,10 @@
       "child worker"
     ],
     "maps_to": [
-      {"section_id": "KSEA_1961_S24", "relevance": "primary"}
+      {
+        "section_id": "KSEA_1961_S24",
+        "relevance": "primary"
+      }
     ]
   },
   {
@@ -390,8 +766,14 @@
       "pay discrimination"
     ],
     "maps_to": [
-      {"section_id": "COW_2019_S3", "relevance": "primary"},
-      {"section_id": "COW_2019_S4", "relevance": "supporting"}
+      {
+        "section_id": "COW_2019_S3",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S4",
+        "relevance": "supporting"
+      }
     ]
   },
   {
@@ -404,7 +786,10 @@
       "preference to retrenched workers"
     ],
     "maps_to": [
-      {"section_id": "IDA_1947_S25H", "relevance": "primary"}
+      {
+        "section_id": "IDA_1947_S25H",
+        "relevance": "primary"
+      }
     ]
   },
   {
@@ -415,12 +800,885 @@
       "service conditions",
       "employment terms changed",
       "employer changed terms",
-      "terms of employment altered"
+      "terms of employment altered",
+      "notice of change",
+      "changed my shift",
+      "shift timings changed",
+      "change in shift",
+      "changed my timings",
+      "changed my duties",
+      "change in working conditions",
+      "changed without telling"
     ],
     "maps_to": [
-      {"section_id": "IDA_1947_S33",  "relevance": "primary"},
-      {"section_id": "IDA_1947_S9A",  "relevance": "supporting"},
-      {"section_id": "IDA_1947_S33A", "relevance": "supporting"}
+      {
+        "section_id": "IDA_1947_S33",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S33A",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S9A",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S6A",
+        "relevance": "supporting"
+      }
+    ]
+  },
+  {
+    "concept_id": "wage_claims_recovery",
+    "name": "recovering unpaid wages",
+    "description": "The forums and procedures for claiming and recovering wages, gratuity, bonus or other dues an employer has failed to pay",
+    "aliases": [
+      "recover unpaid wages",
+      "claim unpaid wages",
+      "file a claim for wages",
+      "how do i get my money",
+      "get my dues",
+      "recovery of dues",
+      "money owed by employer",
+      "employer owes me"
+    ],
+    "maps_to": [
+      {
+        "section_id": "COW_2019_S43",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S17B",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S33C",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S18",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "PGA_1972_S8",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S44",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S46",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S49",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S59",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "PGA_1972_S3",
+        "relevance": "supporting"
+      }
+    ]
+  },
+  {
+    "concept_id": "labour_court_tribunal",
+    "name": "labour court and tribunal",
+    "description": "Constitution, powers and procedure of Labour Courts, Industrial Tribunals and National Tribunals, and the awards they make",
+    "aliases": [
+      "labour court",
+      "industrial tribunal",
+      "national tribunal",
+      "labour tribunal",
+      "which court",
+      "go to court against employer",
+      "adjudication"
+    ],
+    "maps_to": [
+      {
+        "section_id": "IDA_1947_S10",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S11A",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S7",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S7A",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S11",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S15",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S16",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S17",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S17A",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S21",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S33B",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S36",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S6",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S7B",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S7C",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S7D",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S8",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S9",
+        "relevance": "supporting"
+      }
+    ]
+  },
+  {
+    "concept_id": "conciliation_settlement",
+    "name": "conciliation and settlement",
+    "description": "Conciliation proceedings, conciliation officers, and the binding effect and operation of settlements and awards",
+    "aliases": [
+      "conciliation",
+      "conciliation officer",
+      "settlement with employer",
+      "settle the dispute",
+      "binding settlement",
+      "mediation"
+    ],
+    "maps_to": [
+      {
+        "section_id": "IDA_1947_S12",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S18",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S13",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S14",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S19",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S20",
+        "relevance": "supporting"
+      }
+    ]
+  },
+  {
+    "concept_id": "penalties_offences",
+    "name": "penalties for employer offences",
+    "description": "Punishments, fines and imprisonment prescribed for employers who contravene labour law, and how those offences are prosecuted",
+    "aliases": [
+      "punishment for employer",
+      "penalty for employer",
+      "employer be fined",
+      "employer be punished",
+      "prosecute my employer",
+      "is it a criminal offence",
+      "what happens to the employer"
+    ],
+    "maps_to": [
+      {
+        "section_id": "COW_2019_S53",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S54",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25Q",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25R",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S30",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "PGA_1972_S9",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S52",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S55",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S56",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S57",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S63",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25U",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S26",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S27",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S28",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S29",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S30",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S30A",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S31",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S32",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S34",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S31",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S32",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S33",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S33A",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "PGA_1972_S10",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "PGA_1972_S11",
+        "relevance": "supporting"
+      }
+    ]
+  },
+  {
+    "concept_id": "inspection_enforcement",
+    "name": "labour inspector",
+    "description": "Appointment and powers of Inspectors and Inspector-cum-Facilitators who enforce labour legislation and inspect establishments",
+    "aliases": [
+      "labour inspector",
+      "inspector-cum-facilitator",
+      "complain to the inspector",
+      "labour officer",
+      "inspection of establishment",
+      "labour department complaint"
+    ],
+    "maps_to": [
+      {
+        "section_id": "COW_2019_S51",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S26",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S27",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "PGA_1972_S7A",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "PGA_1972_S7B",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S28",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S29",
+        "relevance": "supporting"
+      }
+    ]
+  },
+  {
+    "concept_id": "registers_records",
+    "name": "employment records and registers",
+    "description": "The registers, records, returns, muster rolls and notices an employer is required to maintain and display",
+    "aliases": [
+      "maintain registers",
+      "employment records",
+      "muster roll",
+      "wage register",
+      "records employer must keep",
+      "display notices"
+    ],
+    "maps_to": [
+      {
+        "section_id": "COW_2019_S50",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25D",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S34",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S29",
+        "relevance": "supporting"
+      }
+    ]
+  },
+  {
+    "concept_id": "employment_registration",
+    "name": "registration of establishment",
+    "description": "Registration of shops and commercial establishments, appointment orders, and notifying changes or closure to the Inspector",
+    "aliases": [
+      "register the establishment",
+      "registration certificate",
+      "shop registration",
+      "appointment order",
+      "appointment letter"
+    ],
+    "maps_to": [
+      {
+        "section_id": "KSEA_1961_S4",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S6A",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S5",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S6",
+        "relevance": "supporting"
+      }
+    ]
+  },
+  {
+    "concept_id": "night_work_women",
+    "name": "night work for women",
+    "description": "Restrictions on employing women and young persons during night hours",
+    "aliases": [
+      "women night shift",
+      "night shift for women",
+      "women working at night",
+      "young persons at night",
+      "late night duty"
+    ],
+    "maps_to": [
+      {
+        "section_id": "KSEA_1961_S25",
+        "relevance": "primary"
+      }
+    ]
+  },
+  {
+    "concept_id": "rest_interval",
+    "name": "rest interval and spreadover",
+    "description": "Compulsory rest intervals during the working day and the maximum spreadover of working hours",
+    "aliases": [
+      "rest interval",
+      "lunch break",
+      "tea break",
+      "break during work",
+      "spreadover",
+      "no breaks at work"
+    ],
+    "maps_to": [
+      {
+        "section_id": "KSEA_1961_S10",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S9",
+        "relevance": "primary"
+      }
+    ]
+  },
+  {
+    "concept_id": "wage_payment_mode",
+    "name": "how and when wages must be paid",
+    "description": "The wage period, the time limit for paying wages, and the permitted modes of paying wages",
+    "aliases": [
+      "when should i be paid",
+      "wage period",
+      "salary date",
+      "paid in cash",
+      "paid by cheque",
+      "mode of payment of wages",
+      "payday"
+    ],
+    "maps_to": [
+      {
+        "section_id": "COW_2019_S15",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S16",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S17",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S17",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S21",
+        "relevance": "supporting"
+      }
+    ]
+  },
+  {
+    "concept_id": "wage_deductions",
+    "name": "deductions from wages",
+    "description": "The deductions an employer may lawfully make from wages, including fines, absence from duty, damage or loss, advances and loans, and the limits on them",
+    "aliases": [
+      "deduction from salary",
+      "deducted my salary",
+      "money cut from wages",
+      "salary cut",
+      "fine imposed by employer",
+      "penalty deducted",
+      "recovery of advance",
+      "cut my salary",
+      "deducted from my pay",
+      "money deducted",
+      "docked my pay"
+    ],
+    "maps_to": [
+      {
+        "section_id": "COW_2019_S18",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S19",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S20",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S21",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S22",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S23",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S24",
+        "relevance": "supporting"
+      }
+    ]
+  },
+  {
+    "concept_id": "floor_wage",
+    "name": "floor wage",
+    "description": "The floor wage fixed by the Central Government below which no minimum wage may be set",
+    "aliases": [
+      "floor wage",
+      "national minimum wage",
+      "central government wage floor"
+    ],
+    "maps_to": [
+      {
+        "section_id": "COW_2019_S9",
+        "relevance": "primary"
+      }
+    ]
+  },
+  {
+    "concept_id": "definitions_scope",
+    "name": "who counts as an employee or workman",
+    "description": "Statutory definitions determining who is a workman, employee or employer, and what counts as wages or an industry",
+    "aliases": [
+      "am i a workman",
+      "who is a workman",
+      "definition of employee",
+      "definition of wages",
+      "counted as an employee",
+      "manager or workman",
+      "supervisory role"
+    ],
+    "maps_to": [
+      {
+        "section_id": "COW_2019_S2",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S2",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S2",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "PGA_1972_S2",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25B",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25L",
+        "relevance": "supporting"
+      }
+    ]
+  },
+  {
+    "concept_id": "applicability_coverage",
+    "name": "which establishments the law covers",
+    "description": "Which establishments, employees and areas a statute applies to, including thresholds, exemptions and repeals",
+    "aliases": [
+      "does the law apply to me",
+      "does this act apply",
+      "small company",
+      "how many employees",
+      "is my company covered",
+      "exempt from the act",
+      "applicability"
+    ],
+    "maps_to": [
+      {
+        "section_id": "COW_2019_S69",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "KSEA_1961_S3",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "PGA_1972_S1",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S1",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S25",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S30",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S40",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S41",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S66",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S1",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25A",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25K",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S25S",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S36B",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "IDA_1947_S9B",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S1",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S14",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S20",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "PGA_1972_S5",
+        "relevance": "supporting"
+      }
+    ]
+  },
+  {
+    "concept_id": "gratuity_nomination",
+    "name": "gratuity nomination",
+    "description": "Nominating who receives gratuity, and payment of gratuity on the death of an employee",
+    "aliases": [
+      "gratuity nomination",
+      "nominee for gratuity",
+      "gratuity after death",
+      "gratuity to family"
+    ],
+    "maps_to": [
+      {
+        "section_id": "PGA_1972_S6",
+        "relevance": "primary"
+      }
+    ]
+  },
+  {
+    "concept_id": "appeal_review",
+    "name": "appeal against an order",
+    "description": "Appeals against orders passed by authorities under labour legislation, and the time limits for filing them",
+    "aliases": [
+      "appeal against the order",
+      "how do i appeal",
+      "challenge the order",
+      "appellate authority"
+    ],
+    "maps_to": [
+      {
+        "section_id": "COW_2019_S49",
+        "relevance": "primary"
+      }
+    ]
+  },
+  {
+    "concept_id": "contracting_out",
+    "name": "agreements that waive legal rights",
+    "description": "The rule that an agreement by which an employee relinquishes a statutory right is void, and the overriding effect of labour legislation",
+    "aliases": [
+      "signed away my rights",
+      "agreement to take less",
+      "waive my rights",
+      "contract says otherwise",
+      "employment contract overrides",
+      "i signed a paper"
+    ],
+    "maps_to": [
+      {
+        "section_id": "COW_2019_S60",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S61",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S25J",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "KSEA_1961_S35",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "PGA_1972_S14",
+        "relevance": "supporting"
+      }
+    ]
+  },
+  {
+    "concept_id": "grievance_redressal",
+    "name": "raising a workplace grievance",
+    "description": "Grievance Redressal Machinery inside an establishment and representation of parties in proceedings",
+    "aliases": [
+      "grievance redressal",
+      "raise a grievance",
+      "internal complaint",
+      "complain at work",
+      "represented by a union"
+    ],
+    "maps_to": [
+      {
+        "section_id": "IDA_1947_S9C",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "IDA_1947_S36",
+        "relevance": "supporting"
+      }
+    ]
+  },
+  {
+    "concept_id": "arbitration",
+    "name": "voluntary arbitration",
+    "description": "Voluntary reference of an industrial dispute to arbitration by written agreement between employer and workmen",
+    "aliases": [
+      "arbitration",
+      "arbitrator",
+      "refer to arbitration",
+      "settle outside court"
+    ],
+    "maps_to": [
+      {
+        "section_id": "IDA_1947_S10A",
+        "relevance": "primary"
+      }
+    ]
+  },
+  {
+    "concept_id": "bonus_computation",
+    "name": "how bonus is calculated",
+    "description": "Computation of gross profits, available and allocable surplus, set-on and set-off, and the deductions applied in working out bonus",
+    "aliases": [
+      "how is bonus calculated",
+      "bonus calculation",
+      "allocable surplus",
+      "available surplus",
+      "gross profits",
+      "set on and set off"
+    ],
+    "maps_to": [
+      {
+        "section_id": "COW_2019_S31",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S32",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S33",
+        "relevance": "primary"
+      },
+      {
+        "section_id": "COW_2019_S28",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S34",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S35",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S36",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S37",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S38",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S47",
+        "relevance": "supporting"
+      },
+      {
+        "section_id": "COW_2019_S48",
+        "relevance": "supporting"
+      }
     ]
   }
 ]

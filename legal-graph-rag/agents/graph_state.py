@@ -51,6 +51,12 @@ class LegalQueryState(BaseModel):
     concept: str = ""  # legacy direct-concept override; superseded by grounding
     extraction: Optional[ExtractionResult] = None
     grounded_concepts: list[str] = Field(default_factory=list)
+    # Extracted phrases that matched NO concept. Needed because
+    # grounded_concepts is a union: it cannot tell you whether every extracted
+    # phrase was covered or whether one phrase produced several concepts while
+    # another produced none. output_guardrail_node scores concept_coverage from
+    # this (CLAUDE.md section 6).
+    ungrounded_phrases: list[str] = Field(default_factory=list)
     max_hops: int = 2
     retrieval: Optional[RetrievalResult] = None
     sufficiency: Optional[SufficiencyVerdict] = None

@@ -25,18 +25,34 @@ def concept_grounding_node(state: LegalQueryState) -> dict:
 
     grounded: list[str] = []
     seen: set[str] = set()
+    ungrounded: list[str] = []
+
     for text in candidates:
-        for concept_name in ground_query(text):
+        matches = ground_query(text)
+        # Track PER PHRASE, not just the union. The output guardrail scores
+        # concept_coverage as "how much of the query's legal intent did we
+        # actually ground", which is a question about the extracted phrases —
+        # and one phrase can ground to several concepts while another grounds to
+        # none. Counting only the union hides that second phrase entirely.
+        if not matches:
+            ungrounded.append(text)
+            continue
+        for concept_name in matches:
             if concept_name not in seen:
                 seen.add(concept_name)
                 grounded.append(concept_name)
 
-    if not grounded:
-        return {
-            "grounded_concepts": [],
-            "warnings": state.warnings + [
-                f"No concept matched for candidates: {candidates!r}"
-            ],
-        }
+    update: dict = {"grounded_concepts": grounded, "ungrounded_phrases": ungrounded}
 
-    return {"grounded_concepts": grounded}
+    if not grounded:
+        update["warnings"] = state.warnings + [
+            f"No concept matched for candidates: {candidates!r}"
+        ]
+    elif ungrounded:
+        update["warnings"] = state.warnings + [
+            "No concept matched for part of the query: "
+            + ", ".join(repr(phrase) for phrase in ungrounded)
+            + ". That aspect may not be covered by the retrieved law."
+        ]
+
+    return update
