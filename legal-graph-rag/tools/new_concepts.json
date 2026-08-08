@@ -243,6 +243,136 @@
     ]
   },
   {
+    "concept_id": "trade_union",
+    "name": "trade union",
+    "description": "Registration, recognition, rights and immunities of trade unions, and recognition of a negotiating union or negotiating council",
+    "aliases": [
+      "trade union",
+      "labour union",
+      "workers union",
+      "join a union",
+      "register a union",
+      "union recognition",
+      "negotiating union",
+      "union membership"
+    ]
+  },
+  {
+    "concept_id": "standing_orders",
+    "name": "standing orders",
+    "description": "Model and certified standing orders governing conditions of employment in an industrial establishment, and the disciplinary procedure under them",
+    "aliases": [
+      "standing orders",
+      "certified standing orders",
+      "model standing orders",
+      "service rules",
+      "disciplinary proceedings",
+      "disciplinary enquiry",
+      "domestic enquiry",
+      "charge sheet at work"
+    ]
+  },
+  {
+    "concept_id": "provident_fund",
+    "name": "provident fund",
+    "description": "Employees' provident fund: schemes, employer and employee contributions, transfer of accounts and recovery of unpaid contributions",
+    "aliases": [
+      "provident fund",
+      "employees provident fund",
+      "epf",
+      "pf contribution",
+      "pf account",
+      "pf not deposited",
+      "pf transfer",
+      "retirement fund"
+    ]
+  },
+  {
+    "concept_id": "employees_state_insurance",
+    "name": "employees state insurance",
+    "description": "Employees' State Insurance: compulsory insurance of employees, contributions, and sickness, medical, disablement and dependants' benefits",
+    "aliases": [
+      "employees state insurance",
+      "esi",
+      "esic",
+      "sickness benefit",
+      "medical benefit",
+      "disablement benefit",
+      "dependants benefit",
+      "insured person"
+    ]
+  },
+  {
+    "concept_id": "maternity_benefit",
+    "name": "maternity benefit",
+    "description": "Maternity leave and benefit, medical bonus, nursing breaks, creche facilities, and protection from dismissal during pregnancy",
+    "aliases": [
+      "maternity benefit",
+      "maternity leave",
+      "pregnancy leave",
+      "pregnant employee",
+      "nursing break",
+      "creche facility",
+      "medical bonus",
+      "miscarriage leave",
+      "dismissed while pregnant"
+    ]
+  },
+  {
+    "concept_id": "employment_injury_compensation",
+    "name": "compensation for injury at work",
+    "description": "Employer's liability to pay compensation for death or injury arising out of and in the course of employment, and how that compensation is calculated and claimed",
+    "aliases": [
+      "injured at work",
+      "accident at work",
+      "workplace accident",
+      "employment injury",
+      "compensation for injury",
+      "occupational disease",
+      "died at work",
+      "workmen compensation"
+    ]
+  },
+  {
+    "concept_id": "gig_platform_workers",
+    "name": "gig and platform workers",
+    "description": "Social security schemes, registration and aggregator obligations for gig workers and platform workers",
+    "aliases": [
+      "gig worker",
+      "platform worker",
+      "aggregator",
+      "delivery partner",
+      "cab driver app",
+      "freelance worker rights",
+      "gig economy"
+    ]
+  },
+  {
+    "concept_id": "unorganised_workers",
+    "name": "unorganised workers",
+    "description": "Registration of unorganised workers and the welfare schemes, funds and facilitation centres provided for them",
+    "aliases": [
+      "unorganised worker",
+      "unorganized worker",
+      "informal sector",
+      "daily wage worker",
+      "self employed worker",
+      "building worker",
+      "construction worker welfare"
+    ]
+  },
+  {
+    "concept_id": "worker_reskilling",
+    "name": "worker re-skilling fund",
+    "description": "The worker re-skilling fund to which an employer contributes on retrenchment, and its payment to the retrenched worker",
+    "aliases": [
+      "reskilling fund",
+      "re-skilling fund",
+      "retraining after retrenchment",
+      "skill development fund"
+    ]
+  },
+  {
     "concept_id": "bonus_computation",
     "name": "how bonus is calculated",
     "description": "Computation of gross profits, available and allocable surplus, set-on and set-off, and the deductions applied in working out bonus",

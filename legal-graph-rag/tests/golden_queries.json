@@ -34,11 +34,11 @@
       "jurisdiction_hint": "Karnataka",
       "expect_status": "ok",
       "expect_concepts": ["wrongful termination"],
-      "must_retrieve": ["IDA_1947_S25F"],
-      "must_cite_any_of": ["IDA_1947_S25F", "KSEA_1961_S39"],
-      "forbid_acts": ["MWA_1948"],
+      "must_retrieve": ["IRC_2020_S70"],
+      "must_cite_any_of": ["IRC_2020_S70", "KSEA_1961_S39"],
+      "forbid_acts": ["MWA_1948", "IDA_1947", "PGA_1972"],
       "min_confidence": 0.6,
-      "note": "Standing query 1 — happy path. IDA 25F (retrenchment notice + compensation) and KSEA 39 (notice of dismissal, Karnataka) are BOTH defensible for a Karnataka private-company employee, so any_of rather than pinning one. 25F must still be RETRIEVED and rank first."
+      "note": "Standing query 1 — happy path. IRC 2020 s.70 (conditions precedent to retrenchment — successor to IDA 1947 s.25F) and KSEA 39 (notice of dismissal, Karnataka) are BOTH defensible for a Karnataka private-company employee, so any_of rather than pinning one. s.70 must still be RETRIEVED and rank first."
     },
     {
       "id": "T02_wage_delay",
@@ -47,7 +47,7 @@
       "expect_status": "ok",
       "expect_concepts": ["salary delay"],
       "must_cite": ["COW_2019_S17"],
-      "forbid_acts": ["MWA_1948"],
+      "forbid_acts": ["MWA_1948", "IDA_1947", "PGA_1972"],
       "min_confidence": 0.6,
       "note": "Standing query 2. S17 fixes the time limit for payment of wages."
     },
@@ -57,10 +57,10 @@
       "persona": "citizen",
       "expect_status": "ok",
       "expect_concepts": ["gratuity"],
-      "must_retrieve": ["PGA_1972_S4", "PGA_1972_S2A"],
-      "must_cite": ["PGA_1972_S4"],
-      "forbid_acts": ["MWA_1948"],
-      "note": "Standing query 3. S4 is the payment rule, S2A defines continuous service."
+      "must_retrieve": ["SSC_2020_S53", "SSC_2020_S54"],
+      "must_cite": ["SSC_2020_S53"],
+      "forbid_acts": ["MWA_1948", "IDA_1947", "PGA_1972"],
+      "note": "Standing query 3. SSC 2020 s.53 is the payment rule and s.54 defines continuous service (successors to PGA 1972 s.4 and s.2A). Gratuity needs 5 years, so the correct answer is NO."
     },
     {
       "id": "T04_minimum_wage_underspecified",
@@ -69,8 +69,8 @@
       "expect_status": "ok",
       "expect_concepts": ["minimum wages"],
       "must_cite": ["COW_2019_S6"],
-      "forbid_acts": ["MWA_1948"],
-      "note": "Standing query 4. THE temporal test: must answer from the Code on Wages, never the repealed Minimum Wages Act."
+      "forbid_acts": ["MWA_1948", "IDA_1947", "PGA_1972"],
+      "note": "Standing query 4. THE temporal test: must answer from the Code on Wages 2019, never the repealed Minimum Wages Act 1948."
     },
     {
       "id": "T05_out_of_domain_divorce",
@@ -89,12 +89,19 @@
       "note": "Standing query 6 — safety exit, no legal content regardless of grounding."
     },
     {
-      "id": "T07_direct_section_25N",
-      "query": "what does Section 25N of the Industrial Disputes Act say?",
+      "id": "T07_direct_section_lookup",
+      "query": "what does Section 70 of the Industrial Relations Code say?",
       "persona": "lawyer",
       "expect_status": "ok",
-      "must_retrieve": ["IDA_1947_S25N"],
-      "note": "Standing query 7 — direct section lookup."
+      "must_retrieve": ["IRC_2020_S70"],
+      "note": "Standing query 7 — direct section lookup, repointed to current law. (It used to name IDA 1947 s.25N; that Act is now repealed, so the repealed-reference behaviour is tested separately in T51.)"
+    },
+    {
+      "id": "T51_repealed_section_reference",
+      "query": "what does Section 25N of the Industrial Disputes Act say?",
+      "persona": "lawyer",
+      "forbid_acts": ["IDA_1947", "PGA_1972", "MWA_1948"],
+      "note": "The user names a section of a REPEALED Act by number. resolve_section_references deliberately excludes repealed acts, so no direct hit is possible; the engine must fall back to current law and must never quote the repealed provision back as though it were operative. Status unasserted — either an honest answer from IRC 2020 or insufficient_evidence is acceptable; citing IDA_1947 is not."
     },
     {
       "id": "T08_nonsense",
@@ -132,7 +139,7 @@
       "expect_status": "ok",
       "expect_concepts": ["working hours"],
       "must_retrieve": ["KSEA_1961_S7"],
-      "forbid_acts": ["MWA_1948"],
+      "forbid_acts": ["MWA_1948", "IDA_1947", "PGA_1972"],
       "note": "A.2 — Karnataka law IS correct here; the filter must not over-suppress."
     },
     {
@@ -152,7 +159,7 @@
       "expect_status": "ok",
       "expect_concepts": ["overtime"],
       "must_cite": ["COW_2019_S14"],
-      "forbid_acts": ["MWA_1948"],
+      "forbid_acts": ["MWA_1948", "IDA_1947", "PGA_1972"],
       "note": "A.1/A.3 — overtime's only live central primary is COW S14, which was supporting before the rebuild."
     },
     {
@@ -161,7 +168,7 @@
       "persona": "citizen",
       "expect_status": "ok",
       "must_cite": ["COW_2019_S18"],
-      "forbid_acts": ["MWA_1948"],
+      "forbid_acts": ["MWA_1948", "IDA_1947", "PGA_1972"],
       "note": "S18 lists the only lawful deductions."
     },
     {
@@ -170,7 +177,7 @@
       "persona": "citizen",
       "expect_status": "ok",
       "must_retrieve": ["COW_2019_S19"],
-      "forbid_acts": ["MWA_1948"],
+      "forbid_acts": ["MWA_1948", "IDA_1947", "PGA_1972"],
       "note": "A.1 — S19 (Fines) was unreachable before the ontology rebuild."
     },
     {
@@ -178,9 +185,9 @@
       "query": "how do I legally recover the wages my employer owes me?",
       "persona": "citizen",
       "expect_status": "ok",
-      "must_cite": ["COW_2019_S45"],
-      "forbid_acts": ["MWA_1948"],
-      "note": "A.1 — the claims/recovery route. New concept."
+      "must_cite_any_of": ["COW_2019_S45", "COW_2019_S43", "IRC_2020_S59"],
+      "forbid_acts": ["MWA_1948", "IDA_1947", "PGA_1972"],
+      "note": "A.1 — the claims/recovery route. COW s.45 (claims), COW s.43 (responsibility for dues) and IRC s.59 (recovery of money due) are all correct answers, so any_of rather than pinning one."
     },
     {
       "id": "T17_bonus_eligibility",
@@ -204,7 +211,7 @@
       "query": "the factory has stopped giving me work, do I get paid?",
       "persona": "citizen",
       "expect_status": "ok",
-      "must_retrieve": ["IDA_1947_S25C"],
+      "must_retrieve": ["IRC_2020_S67"],
       "note": "Lay-off compensation."
     },
     {
@@ -213,7 +220,7 @@
       "persona": "citizen",
       "expect_status": "ok",
       "expect_concepts": ["factory closure"],
-      "must_retrieve": ["IDA_1947_S25FFF"],
+      "must_retrieve": ["IRC_2020_S75"],
       "note": "Closure compensation. Alias 'closing down' was added in the rebuild."
     },
     {
@@ -221,7 +228,7 @@
       "query": "am I a workman under the Industrial Disputes Act if I am a supervisor?",
       "persona": "lawyer",
       "expect_status": "ok",
-      "must_retrieve": ["IDA_1947_S2"],
+      "must_retrieve": ["IRC_2020_S2"],
       "note": "A.1 — definitions were unreachable before. The single most-litigated question in Indian employment law."
     },
     {
@@ -238,7 +245,7 @@
       "persona": "citizen",
       "expect_status": "ok",
       "must_retrieve": ["COW_2019_S54"],
-      "forbid_acts": ["MWA_1948"],
+      "forbid_acts": ["MWA_1948", "IDA_1947", "PGA_1972"],
       "note": "A.1 — penalties were unreachable before."
     },
     {
@@ -262,7 +269,7 @@
       "query": "who receives my gratuity if I die before collecting it?",
       "persona": "citizen",
       "expect_status": "ok",
-      "must_retrieve": ["PGA_1972_S6"],
+      "must_retrieve": ["SSC_2020_S55"],
       "note": "A.1 — nomination. New concept."
     },
     {
@@ -271,15 +278,15 @@
       "persona": "citizen",
       "expect_status": "ok",
       "expect_concepts": ["gratuity"],
-      "must_retrieve": ["PGA_1972_S8"],
-      "note": "Gratuity recovery route."
+      "must_retrieve": ["SSC_2020_S53", "SSC_2020_S58"],
+      "note": "Gratuity recovery route. Under SSC 2020 the gratuity-specific enforcement path is s.58 (competent authority), not the generic dues-recovery provision."
     },
     {
       "id": "T28_labour_court",
       "query": "which court hears an industrial dispute?",
       "persona": "lawyer",
       "expect_status": "ok",
-      "must_retrieve": ["IDA_1947_S7"],
+      "must_retrieve": ["IRC_2020_S44"],
       "note": "A.1 — forum question. New concept."
     },
     {
@@ -287,7 +294,7 @@
       "query": "how do I recover money my employer owes me under a settlement?",
       "persona": "lawyer",
       "expect_status": "ok",
-      "must_retrieve": ["IDA_1947_S33C"],
+      "must_retrieve": ["IRC_2020_S59"],
       "note": "A.1 — S33C recovery was unreachable before."
     },
     {
@@ -296,7 +303,7 @@
       "persona": "citizen",
       "expect_status": "ok",
       "expect_concepts": ["strike"],
-      "must_retrieve": ["IDA_1947_S22"],
+      "must_retrieve": ["IRC_2020_S62"],
       "note": "Strike prohibition conditions."
     },
     {
@@ -304,7 +311,7 @@
       "query": "my employer changed my shift timings without telling anyone",
       "persona": "citizen",
       "expect_status": "ok",
-      "must_retrieve": ["IDA_1947_S9A"],
+      "must_retrieve": ["IRC_2020_S40"],
       "note": "Notice of change in conditions of service."
     },
     {
@@ -313,7 +320,7 @@
       "persona": "lawyer",
       "expect_status": "ok",
       "expect_concepts": ["retrenchment"],
-      "must_cite": ["IDA_1947_S25G"],
+      "must_cite": ["IRC_2020_S71"],
       "note": "Last-in-first-out rule."
     },
     {
@@ -321,7 +328,7 @@
       "query": "do retrenched workers get preference if the company hires again?",
       "persona": "citizen",
       "expect_status": "ok",
-      "must_retrieve": ["IDA_1947_S25H"],
+      "must_retrieve": ["IRC_2020_S72"],
       "note": "Re-employment of retrenched workmen."
     },
     {
@@ -330,7 +337,7 @@
       "persona": "citizen",
       "expect_status": "ok",
       "expect_concepts": ["transfer of undertaking"],
-      "must_retrieve": ["IDA_1947_S25FF"],
+      "must_retrieve": ["IRC_2020_S73"],
       "note": "Transfer compensation."
     },
     {
@@ -376,7 +383,7 @@
       "persona": "citizen",
       "expect_status": "ok",
       "must_retrieve": ["COW_2019_S16"],
-      "forbid_acts": ["MWA_1948"],
+      "forbid_acts": ["MWA_1948", "IDA_1947", "PGA_1972"],
       "note": "A.1 — wage period. New concept."
     },
     {
@@ -385,7 +392,7 @@
       "persona": "citizen",
       "expect_status": "ok",
       "expect_concepts": ["unfair labour practice"],
-      "must_retrieve": ["IDA_1947_S25T"],
+      "must_retrieve": ["IRC_2020_S84"],
       "note": "Unfair labour practice."
     },
     {
@@ -416,8 +423,8 @@
       "persona": "lawyer",
       "expect_status": "ok",
       "expect_concepts": ["retrenchment"],
-      "must_cite": ["IDA_1947_S25F"],
-      "expect_text": ["ida_1947_s25f"],
+      "must_cite": ["IRC_2020_S70"],
+      "expect_text": ["irc_2020_s70"],
       "note": "Lawyer persona must KEEP inline markers (citizen strips them)."
     },
     {
@@ -425,7 +432,7 @@
       "query": "what does the Minimum Wages Act 1948 say about fixing wage rates?",
       "persona": "lawyer",
       "expect_status": "ok",
-      "forbid_acts": ["MWA_1948"],
+      "forbid_acts": ["MWA_1948", "IDA_1947", "PGA_1972"],
       "note": "A.3 — user names the repealed Act directly. It must still never be cited as operative law."
     },
     {
@@ -445,16 +452,58 @@
       "note": "Same guard: 'criminal' partially overlaps the penalties concept vocabulary."
     },
     {
-      "id": "T49_epf_honest_gap",
+      "id": "T49_provident_fund",
       "query": "my employer is not depositing my provident fund contributions",
       "persona": "citizen",
-      "note": "Employment law in SUBJECT (so in_domain), but the EPF Act is not in this corpus. The engine must degrade honestly — either insufficient_evidence, or an ok answer that does not fabricate EPF provisions. Status intentionally unasserted; the universal invariants carry the check."
+      "expect_status": "ok",
+      "expect_concepts": ["provident fund"],
+      "must_retrieve": ["SSC_2020_S17"],
+      "note": "WAS an honest-gap test — the EPF Act was outside the corpus and the engine correctly refused. SSC 2020 absorbed the EPF Act (s.164(1) item 3), so this is now an ANSWERABLE query. Ingesting one Code closed the gap with no code change, which is the whole point of the temporal layer."
     },
     {
-      "id": "T50_maternity_honest_gap",
+      "id": "T50_maternity_benefit",
       "query": "how many weeks of maternity leave am I entitled to?",
       "persona": "citizen",
-      "note": "Same as T49 for the Maternity Benefit Act. The failure mode being guarded is confident fabrication, which the hallucination/provenance invariants catch."
+      "expect_status": "ok",
+      "expect_concepts": ["maternity benefit"],
+      "must_cite": ["SSC_2020_S60"],
+      "note": "Same story as T49: the Maternity Benefit Act 1961 was repealed into SSC 2020 (s.164(1) item 5), so maternity leave is now answerable from s.60 rather than refused."
+    },
+    {
+      "id": "T52_gig_worker",
+      "query": "I work for a food delivery app — do I get any social security benefits?",
+      "persona": "citizen",
+      "expect_status": "ok",
+      "must_retrieve": ["SSC_2020_S45"],
+      "forbid_acts": ["IDA_1947", "PGA_1972", "MWA_1948"],
+      "note": "NEW coverage from SSC 2020. Gig and platform workers did not exist as a statutory category under any Act previously in the corpus."
+    },
+    {
+      "id": "T53_injury_at_work",
+      "query": "I was injured in an accident at work, can I claim compensation from my employer?",
+      "persona": "citizen",
+      "expect_status": "ok",
+      "must_retrieve": ["SSC_2020_S74"],
+      "forbid_acts": ["IDA_1947", "PGA_1972", "MWA_1948"],
+      "note": "NEW coverage — the Employee's Compensation Act 1923 was absorbed by SSC 2020 (s.164(1) item 1); s.74 is the employer's liability provision."
+    },
+    {
+      "id": "T54_trade_union_registration",
+      "query": "how many workers do we need to register a trade union?",
+      "persona": "lawyer",
+      "expect_status": "ok",
+      "must_retrieve": ["IRC_2020_S6"],
+      "forbid_acts": ["IDA_1947", "PGA_1972", "MWA_1948"],
+      "note": "NEW coverage — the Trade Unions Act 1926 was absorbed by IRC 2020 (s.104(1)(a)); s.6 sets the registration criteria."
+    },
+    {
+      "id": "T55_standing_orders",
+      "query": "does my employer have to follow a disciplinary enquiry procedure before dismissing me?",
+      "persona": "citizen",
+      "expect_status": "ok",
+      "must_retrieve": ["IRC_2020_S38"],
+      "forbid_acts": ["IDA_1947", "PGA_1972", "MWA_1948"],
+      "note": "NEW coverage — the Industrial Employment (Standing Orders) Act 1946 was absorbed by IRC 2020 (s.104(1)(b)); s.38 caps disciplinary proceedings."
     },
     {
       "id": "T46_spreadover_karnataka",

@@ -150,23 +150,41 @@ extraction → grounding → traversal → sufficiency → [conditional]
 
 **Complete and working:**
 
-- Ingestion layer (`ingest/`) — graph is populated: 5 Acts, 255 Sections, 127 CITES,
-  **45 Concepts, 248 APPLIES_TO, 1 OVERRIDES**. Concept coverage is now
-  **188/217 in-force sections (87%)**, up from 59/255 (23%). The 29 uncovered
-  sections are pure machinery (power to make rules, delegation, protection of
-  action taken in good faith) and PDF artifacts, which carry no answerable rule.
+- Ingestion layer (`ingest/`) — graph is populated: **7 Acts, 523 Sections, 344 CITES,
+  54 Concepts, 466 APPLIES_TO, 3 OVERRIDES**. Concept coverage is
+  **282/383 in-force sections (74%)**. The uncovered sections are pure
+  machinery (power to make rules, delegation, protection of action taken in
+  good faith, constitution of boards, accounts/audit/budget) and PDF artifacts,
+  which carry no answerable rule.
   Rebuild with `python -m tools.build_concept_map` then
   `python -m ingest.ontology_loader`.
+
+  **The four Labour Codes.** Three of the four are now ingested — Code on Wages
+  2019, Industrial Relations Code 2020, Code on Social Security 2020 — all
+  brought into force on **21 November 2025** (S.O. 5320(E); the commencement
+  footnote is printed in the IRC text itself). Between them they repealed the
+  MWA 1948, IDA 1947 and PGA 1972, which is why all three are suppressed. The
+  fourth, the **OSH Code 2020**, is NOT ingested; it subsumes the central
+  factories/shops regime, so the Karnataka Shops Act remains the only source of
+  hours/leave/weekly-holiday answers and stays Karnataka-only.
+
+  Ingesting SSC 2020 also CLOSED coverage gaps that used to be honest refusals:
+  provident fund, ESI, maternity benefit, injury compensation, and gig/platform
+  and unorganised workers are all answerable now. Nine new concepts cover them.
+
+  *"Labour Code 2026" is not a separate statute.* Act No. 1 of 2026 is an
+  amending Act (it substituted IRC s.104(1) w.e.f. 21-11-2025); the ingested
+  PDFs already incorporate it.
 - **Temporal + territorial layer** — `data/ontology/act_metadata.json` +
-  `ingest/act_metadata_loader.py`. MWA 1948 is marked repealed by COW 2019 s.69
-  and is suppressed from retrieval; KSEA 1961 is Karnataka-only and is withheld
-  from users in other states. Both suppressions are reported, never silent.
+  `ingest/act_metadata_loader.py`. THREE Acts are marked repealed and suppressed:
+  MWA 1948 (by COW 2019 s.69), IDA 1947 (by IRC 2020 s.104), PGA 1972 (by SSC 2020
+  s.164) — all w.e.f. 21 Nov 2025. KSEA 1961 is Karnataka-only and is withheld
+  from users in other states. Every suppression is reported, never silent.
 - **Ranking** (`graph/ranking.py`) — BM25 over the candidate set plus relevance,
   hop distance, concept-hit count and act priority. The evidence pack is ordered
   and numbered, and the synthesis prompt tells the model to work down from #1.
-- **Verification harness** (`tests/`) — 50 golden queries run end-to-end against
-  real Neo4j + Gemini, checked against the raw corpus. Latest run: **50/50, 178
-  citations shown, 0 hallucinated, 0 repealed-law citations.**
+- **Verification harness** (`tests/`) — 55 golden queries run end-to-end against
+  real Neo4j + Gemini, checked against the raw corpus.
 - Graph layer (`graph/`) — schema, queries, deterministic traversal.
 - Full agent pipeline, all three LLM calls + both deterministic guardrail nodes:
   - `synthesis_node` (LLM call 3) — verified working; cites only evidence-pack section_ids, short-circuits the empty-retrieval path with no LLM call. **Persona-aware:** the system prompt is `synthesis_base.txt` + the selected persona overlay (citizen = plain-language/reassuring; lawyer = technical/section-by-section).

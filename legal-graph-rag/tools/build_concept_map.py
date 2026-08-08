@@ -152,6 +152,9 @@ def build() -> Tuple[List[Dict[str, Any]], List[str], Dict[str, Any]]:
     upgraded = 0
 
     for section_id, pairs in section_map.items():
+        # Underscore-prefixed keys are section-block comments, not mappings.
+        if section_id.startswith("_"):
+            continue
         if section_id not in sections:
             errors.append(f"{section_id}: not present in sections.jsonl")
             continue

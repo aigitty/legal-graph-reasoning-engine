@@ -32,6 +32,40 @@ PDF_CONFIG = {
         "start_marker": "THE CODE ON WAGES, 2019",
         "stop_markers": [],
     },
+    # ------------------------------------------------------------------ #
+    # The other two Labour Codes brought into force on 21 November 2025
+    # (S.O. 5320(E)). Together with the Code on Wages 2019 above they
+    # replace the Industrial Disputes Act 1947 (IRC s.104) and the Payment
+    # of Gratuity Act 1972 (SSC s.164).
+    #
+    # STOP-MARKER NOTE — do not "simplify" these back to "THE FIRST SCHEDULE".
+    # cut_at_stop_markers() matches a multi-word marker ANYWHERE in the body,
+    # not just as a heading, and both Codes reference their own First Schedule
+    # inline in early sections (e.g. IRC s.2(zj)). Using that marker truncated
+    # the IRC body from 197,000 characters to 15,000 and yielded 2 sections out
+    # of 104. The markers below were each verified to occur EXACTLY ONCE in the
+    # body, at the real start of the schedules.
+    # ------------------------------------------------------------------ #
+    "The_Industrial_Relations_Code_2020.pdf": {
+        "act_id": "IRC_2020",
+        "act_name": "Industrial Relations Code",
+        "year": 2020,
+        "jurisdiction": "Central",
+        "short_name": "IRC",
+        "parser_mode": "arrangement_based",
+        "start_marker": "THE INDUSTRIAL RELATIONS CODE, 2020",
+        "stop_markers": ["MATTERS TO BE PROVIDED IN STANDING ORDERS"],
+    },
+    "The_Code_on_Social_Security_2020.pdf": {
+        "act_id": "SSC_2020",
+        "act_name": "Code on Social Security",
+        "year": 2020,
+        "jurisdiction": "Central",
+        "short_name": "SSC",
+        "parser_mode": "arrangement_based",
+        "start_marker": "THE CODE ON SOCIAL SECURITY, 2020",
+        "stop_markers": ["Chapter No. Chapter Heading Applicability"],
+    },
     "karnataka_shops_act_1961.pdf": {
         "act_id": "KSEA_1961",
         "act_name": "Karnataka Shops and Commercial Establishments Act",

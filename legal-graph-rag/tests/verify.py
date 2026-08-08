@@ -223,8 +223,10 @@ _TENS = {
 # Statutes spell numbers out ("forty-five days", "twenty-one days") while the
 # model writes digits, so BOTH sides are normalised to digits before comparison.
 # Compound tens must be handled before bare tens, or "forty-five" reads as "40".
+# Separator is OPTIONAL: PDF extraction routinely drops the hyphen, so the
+# statutory text reads "twentysix weeks" where the printed Act has "twenty-six".
 _COMPOUND_RE = re.compile(
-    r"\b(" + "|".join(_TENS) + r")[- ]+(" + "|".join(_UNITS) + r")\b",
+    r"\b(" + "|".join(_TENS) + r")[- ]*(" + "|".join(_UNITS) + r")\b",
     re.IGNORECASE,
 )
 _SIMPLE_RE = re.compile(

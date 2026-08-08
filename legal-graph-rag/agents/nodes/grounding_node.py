@@ -3,10 +3,9 @@ agents/nodes/grounding_node.py
 
 Deterministic concept-grounding node.
 
-Grounds each phrase in state.extraction.legal_concepts (if present) against
-data/ontology/concept_map.json via agents.ontology.ground_query(), unioning
-matches. Falls back to grounding state.raw_query directly if extraction
-produced no usable concepts. No LLM here.
+Grounds each phrase in state.extraction.legal_concepts against
+data/ontology/concept_map.json via agents.ontology.ground_query(), unioning the
+matches, and ALSO grounds state.raw_query itself. No LLM here.
 """
 
 from __future__ import annotations
@@ -41,6 +40,23 @@ def concept_grounding_node(state: LegalQueryState) -> dict:
             if concept_name not in seen:
                 seen.add(concept_name)
                 grounded.append(concept_name)
+
+    # ALSO ground the raw query, not only as a fallback when extraction is empty.
+    #
+    # Extraction paraphrases, and a paraphrase can drop the most important fact
+    # in the question. Asked "I work for a food delivery app — do I get any
+    # social security benefits?" it returned "social security benefits", which
+    # grounds to ESI and maternity benefit but loses that the user is a GIG
+    # WORKER — the one thing that determines which law applies to them. The
+    # user's own words still contained it.
+    #
+    # These matches are deliberately NOT counted towards `ungrounded_phrases`:
+    # concept_coverage measures how much of the EXTRACTED intent was grounded,
+    # so a raw-query hit is a bonus, not evidence about extraction quality.
+    for concept_name in ground_query(state.raw_query):
+        if concept_name not in seen:
+            seen.add(concept_name)
+            grounded.append(concept_name)
 
     update: dict = {"grounded_concepts": grounded, "ungrounded_phrases": ungrounded}
 

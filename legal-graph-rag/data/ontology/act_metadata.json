@@ -42,30 +42,59 @@
       "note": "Section 69 repeals the Payment of Wages Act 1936, Minimum Wages Act 1948, Payment of Bonus Act 1965 and Equal Remuneration Act 1976. Section 1(3) commences the Code by Government notification, with different dates permitted for different provisions."
     },
     {
+      "act_id": "IRC_2020",
+      "act_name": "Industrial Relations Code, 2020",
+      "short_name": "IRC",
+      "jurisdiction": "Central",
+      "status": "in_force",
+      "in_force_from": "2025-11-21",
+      "repeals": ["TUA_1926", "IESOA_1946", "IDA_1947"],
+      "repealed_by": null,
+      "repeal_authority": "IRC_2020_S104",
+      "act_priority": 5,
+      "note": "Act No. 35 of 2020. Section 104(1) repeals the Trade Unions Act 1926, the Industrial Employment (Standing Orders) Act 1946 and the Industrial Disputes Act 1947. Commencement confirmed by the footnote in the official text: '21st day of November, 2025 — vide Notification No. S.O. 5320(E), dated 21st November, 2025, Gazette of India, Extraordinary, Part II, sec. 3(ii).' Section 104(1) was itself substituted by Act 1 of 2026, s.2, w.e.f. 21-11-2025 — that amending Act is what is sometimes loosely called 'the 2026 labour code'; it is not a separate Code and the ingested PDF ('As on 2nd April 2026') already incorporates it."
+    },
+    {
+      "act_id": "SSC_2020",
+      "act_name": "Code on Social Security, 2020",
+      "short_name": "SSC",
+      "jurisdiction": "Central",
+      "status": "in_force",
+      "in_force_from": "2025-11-21",
+      "repeals": [
+        "ECA_1923", "ESIA_1948", "EPFA_1952", "EEA_1959",
+        "MBA_1961", "PGA_1972", "CWWFA_1981", "BOCWCA_1996", "UWSSA_2008"
+      ],
+      "repealed_by": null,
+      "repeal_authority": "SSC_2020_S164",
+      "act_priority": 5,
+      "note": "Act No. 36 of 2020. Section 164(1) repeals nine enactments, including the Payment of Gratuity Act 1972 (item 6), the Employees' Provident Funds Act 1952, the Employees' State Insurance Act 1948 and the Maternity Benefit Act 1961. The official text is stamped 'As on the 21th November, 2025', the commencement date. Because this single Code absorbs gratuity, PF, ESI and maternity benefit, ingesting it closes several coverage gaps at once (EPF and maternity queries were previously answered 'not covered')."
+    },
+    {
       "act_id": "IDA_1947",
       "act_name": "Industrial Disputes Act, 1947",
       "short_name": "IDA",
       "jurisdiction": "Central",
-      "status": "in_force",
+      "status": "repealed",
       "in_force_from": "1947-04-01",
       "repeals": [],
-      "repealed_by": null,
-      "repeal_authority": null,
-      "act_priority": 4,
-      "note": "In force per section 1(3). Not repealed by anything in this corpus. (The Industrial Relations Code 2020 subsumes it in the wider world but is not ingested here — see the repeal rule above.)"
+      "repealed_by": "IRC_2020",
+      "repeal_authority": "IRC_2020_S104",
+      "act_priority": 0,
+      "note": "Repealed by section 104(1)(c) of the Industrial Relations Code, 2020, w.e.f. 21 November 2025. Suppressed from retrieval and never citable. Termination, retrenchment, lay-off, closure, strike and industrial-dispute questions are answered from IRC 2020 instead (s.70 replaces s.25F, s.71 replaces s.25G, s.66 replaces s.25B, s.62-63 replace s.22-24, and so on)."
     },
     {
       "act_id": "PGA_1972",
       "act_name": "Payment of Gratuity Act, 1972",
       "short_name": "PGA",
       "jurisdiction": "Central",
-      "status": "in_force",
+      "status": "repealed",
       "in_force_from": "1972-09-16",
       "repeals": [],
-      "repealed_by": null,
-      "repeal_authority": null,
-      "act_priority": 4,
-      "note": "In force. Not repealed by anything in this corpus. (The Social Security Code 2020 subsumes it in the wider world but is not ingested here.)"
+      "repealed_by": "SSC_2020",
+      "repeal_authority": "SSC_2020_S164",
+      "act_priority": 0,
+      "note": "Repealed by section 164(1) item 6 of the Code on Social Security, 2020, w.e.f. 21 November 2025. Suppressed from retrieval and never citable. Gratuity questions are answered from SSC 2020 instead (s.53 replaces s.4, s.56 replaces s.7, s.54 replaces s.2A, s.55 replaces s.6)."
     },
     {
       "act_id": "KSEA_1961",
