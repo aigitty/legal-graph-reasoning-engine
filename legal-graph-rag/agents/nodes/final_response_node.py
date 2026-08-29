@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import logging
 
+from agents.calculators import Calculation, format_inr
 from agents.citations import render_markers
 from agents.graph_state import LegalQueryState
 from agents.persona import CITIZEN, LAWYER, normalize_persona
@@ -75,7 +76,11 @@ def _resolve_status(state: LegalQueryState) -> str:
         return "error"
     extraction = state.extraction
     if extraction is not None:
-        if extraction.safety_flag:
+        # is_unsafe, not raw truthiness: safety_flag holds a free-text REASON,
+        # so the sentinel strings a model returns for "nothing to report"
+        # ("none", "null") would otherwise refuse a perfectly legitimate query
+        # and show the user no legal content at all.
+        if extraction.is_unsafe:
             return "rejected"
         if not extraction.in_domain:
             return "out_of_domain"
@@ -134,8 +139,113 @@ def _confidence_line(state: LegalQueryState, persona: str, partial: bool) -> str
             return f"Confidence: {state.confidence:.2f}  ({breakdown})"
         return f"Confidence: {state.confidence:.2f}"
     # Citizen: no numeric jargon or factor breakdown.
+    #
+    # The word is followed by what it actually MEANS. "How confident is this
+    # answer: high" was read as "this answer is legally correct for my
+    # situation", which is not what the score measures — it measures how well
+    # the law was grounded, retrieved and citation-checked. On a page about
+    # losing your job that gap matters, so the qualifier is not optional.
     word = _confidence_word(state.confidence, _evidence_is_partial(state, partial))
-    return f"How confident is this answer: {word}."
+    return (
+        f"How reliable is this: {word}.\n"
+        "That describes how well the law was found and checked — it is not a "
+        "prediction of what will happen in your case."
+    )
+
+
+def _act_ids_for(verified: list[str]) -> list[str]:
+    """Distinct act_ids behind the verified citations, in first-cited order."""
+    act_ids: list[str] = []
+    for section_id in verified:
+        act_id = act_registry.act_id_for_section(section_id)
+        if act_id and act_id not in act_ids:
+            act_ids.append(act_id)
+    return act_ids
+
+
+def _commencement_line(verified: list[str], persona: str) -> str:
+    """
+    State WHEN the cited law came into force.
+
+    An answer that gives the current position without dating it is unsafe on the
+    queries where dating matters most: the three Labour Codes commenced on
+    21 November 2025, so conduct before that date is still governed by the Acts
+    this engine now suppresses. Neither persona was told this, which meant a
+    practitioner could apply the IRC to a pre-commencement dispute and a worker
+    could not tell whether the answer covered what happened to them.
+
+    Deterministic — read from act_metadata.json via act_registry, never from the
+    model.
+    """
+    notes = act_registry.commencement_notes(_act_ids_for(verified))
+    if not notes:
+        return ""
+
+    listed = "; ".join(f"{name} — {when}" for name, when in notes)
+    if persona == LAWYER:
+        return (
+            f"In force from: {listed}. Conduct predating commencement may remain "
+            "governed by the corresponding repealed enactment."
+        )
+    if len(notes) == 1:
+        name, when = notes[0]
+        body = f"The {name} came into force on {when}."
+    else:
+        body = "The law cited above came into force on these dates — " + listed + "."
+    return (
+        f"When this law started applying: {body} If the events in question "
+        "happened before that date, the earlier law may apply instead, so "
+        "mention the dates when you get help."
+    )
+
+
+def _superseded_line(
+    state: LegalQueryState, persona: str, verified: list[str]
+) -> str:
+    """
+    Tell the user which law was WITHHELD as repealed, and what replaced it.
+
+    The suppression was already recorded in retrieval.suppressed_acts and pushed
+    into state.warnings, but warnings are never displayed — so the user never
+    learned that the Act every search result still describes has been replaced.
+    A correct answer that contradicts everything published before November 2025
+    reads as a wrong answer unless it says why.
+
+    RELEVANCE FILTER: only Acts whose SUCCESSOR was actually cited are
+    mentioned. suppressed_acts accumulates across every concept traversed,
+    including the remedy layer, so a wages question was reporting that the
+    Industrial Disputes Act and the Payment of Gratuity Act had been repealed —
+    true, unprompted, and nothing to do with what the reader asked. A note about
+    superseded law only helps when it explains the law that is actually in the
+    answer.
+    """
+    if state.retrieval is None or not state.retrieval.suppressed_acts:
+        return ""
+
+    cited_acts = set(_act_ids_for(verified))
+    if not cited_acts:
+        return ""
+
+    relevant = [
+        act_id
+        for act_id in state.retrieval.suppressed_acts
+        if (meta := act_registry.get_act(act_id)) is not None
+        and meta.repealed_by in cited_acts
+    ]
+    if not relevant:
+        return ""
+
+    if persona == LAWYER:
+        notes = [n for n in (act_registry.repeal_note(a) for a in relevant) if n]
+        return "Excluded as repealed: " + " ".join(notes) if notes else ""
+
+    notes = [n for n in (act_registry.replacement_note(a) for a in relevant) if n]
+    if not notes:
+        return ""
+    return (
+        "If you search this online: " + " ".join(notes) + " Older articles and "
+        "websites may still describe the earlier rules."
+    )
 
 
 def _display_names(state: LegalQueryState, verified: list[str]) -> list[str]:
@@ -173,6 +283,99 @@ def _citations_line(state: LegalQueryState, verified: list[str], persona: str) -
     return "No specific sections could be confirmed for your question."
 
 
+def _temporal_mismatch_banner(state: LegalQueryState, persona: str) -> str:
+    """
+    A deterministic, un-skippable warning when the query's own stated event
+    date predates the commencement of the Act the answer relies on.
+
+    THIS IS THE SAFETY NET, not the only mechanism. synthesis_node already asks
+    the model to address this in its opening — but this project's entire
+    integrity model (CLAUDE.md) is that a prompt ASKS and deterministic code
+    ENFORCES, because a model can be asked to do something correctly and simply
+    not do it. Citation verification does not trust the model to only cite what
+    it was shown; this does not trust the model to remember to mention a
+    mismatch it was told about three paragraphs of instructions earlier. It is
+    prepended BEFORE the model's own opening line, because a warning placed
+    after a confident paragraph is a warning most readers have already stopped
+    reading for.
+    """
+    conflicts = state.temporal_conflicts
+    if not conflicts:
+        return ""
+
+    if persona == LAWYER:
+        lines = []
+        for act_name, when, predecessor in conflicts:
+            older = f" {predecessor} may govern instead." if predecessor else ""
+            lines.append(f"{act_name} (in force from {when}).{older}")
+        return (
+            "TEMPORAL MISMATCH: the stated event date precedes the "
+            "commencement of " + " ".join(lines) + " The analysis below cites "
+            "currently in-force sections, but their applicability to facts "
+            "predating commencement has NOT been verified and should not be "
+            "assumed."
+        )
+
+    names = [act_name for act_name, _, _ in conflicts]
+    listed = names[0] if len(names) == 1 else ", ".join(names)
+    return (
+        f"Before anything else: you mentioned this happened before the "
+        f"{listed} existed. The law changed on 21 November 2025, so an older "
+        f"law may actually cover your situation instead of what is explained "
+        f"below. Please double-check the date, or mention it when you get "
+        f"advice — the numbers below may not be the ones that applied to you."
+    )
+
+
+def _display_name(state: LegalQueryState, section_id: str) -> str:
+    """"Section 53 of the Code on Social Security, 2020" for a calc's citation."""
+    if state.retrieval is not None:
+        for section in state.retrieval.sections:
+            if section.section_id == section_id and section.section_number and section.act_name:
+                return f"Section {section.section_number} of the {section.act_name}"
+    return section_id
+
+
+def _render_calculation(state: LegalQueryState, calc: Calculation, persona: str) -> str:
+    """
+    One Calculation as a clearly-separated block, deterministically formatted —
+    never left to the model to restate, so the number the user sees is always
+    exactly the one Python computed (see synthesis_node's calc_note).
+    """
+    where = _display_name(state, calc.section_id)
+
+    if not calc.is_computed:
+        # The honest-gap case: still shown, not hidden, because "we found the
+        # rule but cannot safely compute a number from it" is itself useful
+        # information (agents/calculators.retrenchment_compensation_gap).
+        return f"{calc.label} — not calculated ({where}): {calc.note}"
+
+    amount = format_inr(calc.amount)
+    if persona == LAWYER:
+        lines = [f"{calc.label}: {amount}  [{where}: {calc.formula}]"]
+        lines += [f"  Note: {a}" for a in calc.assumptions]
+        return "\n".join(lines)
+
+    lines = [f"{calc.label}: approximately {amount}"]
+    lines.append(f"  Based on: {where}")
+    lines += [f"  Note: {a}" for a in calc.assumptions]
+    return "\n".join(lines)
+
+
+def _calculations_block(state: LegalQueryState, persona: str) -> str:
+    calcs = state.verified_calculations or []
+    if not calcs:
+        return ""
+    heading = "Estimated amounts" if persona != LAWYER else "Calculated entitlements"
+    body = "\n\n".join(_render_calculation(state, c, persona) for c in calcs)
+    footer = (
+        "These are estimates from the figures you gave and the exact "
+        "statutory formula — not a substitute for your employer's or a "
+        "labour authority's own calculation."
+    )
+    return f"{heading}:\n{body}\n\n{footer}"
+
+
 def _format_answer(state: LegalQueryState, partial: bool, persona: str) -> str:
     verified = state.verified_section_ids or []
     body = _render_markers(
@@ -187,6 +390,10 @@ def _format_answer(state: LegalQueryState, partial: bool, persona: str) -> str:
         )
 
     parts: list[str] = []
+    banner = _temporal_mismatch_banner(state, persona)
+    if banner:
+        parts.append(banner)
+        parts.append("")
     if partial:
         gap = ""
         if state.sufficiency is not None and state.sufficiency.missing:
@@ -204,8 +411,26 @@ def _format_answer(state: LegalQueryState, partial: bool, persona: str) -> str:
         parts.append("")
 
     parts.append(body)
+
+    calc_block = _calculations_block(state, persona)
+    if calc_block:
+        parts.append("")
+        parts.append(calc_block)
+
     parts.append("")
     parts.append(_citations_line(state, verified, persona))
+
+    # Temporal context, both deterministic. Placed with the citations rather
+    # than in the body because they qualify WHICH law was cited, and because
+    # leaving them to the LLM would make them optional.
+    commencement = _commencement_line(verified, persona)
+    if commencement:
+        parts.append(commencement)
+
+    superseded = _superseded_line(state, persona, verified)
+    if superseded:
+        parts.append(superseded)
+
     parts.append(_confidence_line(state, persona, partial))
     if state.disclaimer:
         parts.append("")
@@ -271,6 +496,7 @@ def final_response_node(state: LegalQueryState) -> dict:
                 "status": status,
                 "final_answer": final_answer,
                 "verified_section_ids": [],
+                "verified_calculations": [],
                 "confidence": 0.0,
                 "confidence_factors": {},
             }

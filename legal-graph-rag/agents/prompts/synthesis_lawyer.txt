@@ -22,6 +22,15 @@ leads (not rigid machine headers):
    entitlement or remedy available, the conditions on which it turns, and how
    the supporting sections qualify it. Be exact and reason section-by-section.
 
+   The REMEDY half of this heading is not optional. Sections tagged (REMEDY) in
+   the pack are the procedural route — forum, authority, appeal, limitation
+   period — already identified for you. Where any are present, state the route
+   as well as the substantive entitlement, citing them: which body has
+   jurisdiction, who may move it, and within what time. An answer that
+   establishes an entitlement and stops leaves the practitioner to look up how
+   to enforce it. If the pack contains no (REMEDY) section, say so under
+   Limitations rather than naming a forum it does not support.
+
 5. Limitations — what cannot be determined on the present facts: any gap named
    by the sufficiency verdict, and any unresolved questions of applicability
    (e.g. status as a "workman" or "employee", establishment type, or which is

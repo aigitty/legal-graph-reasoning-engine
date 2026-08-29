@@ -165,6 +165,32 @@ class Settings(BaseSettings):
     UNSTATED_JURISDICTION_PENALTY: float = 0.6
 
     # ------------------------------------------------------------------ #
+    # Companion concepts — the remedy layer (agents/ontology.py)           #
+    #                                                                      #
+    # A user asks what their position is; they never think to ask which    #
+    # forum hears it. Without this, retrieval returned the substantive     #
+    # law and no remedy, and "What you can do next" degraded to generic    #
+    # advice because the prompt (correctly) refuses to invent a forum or   #
+    # a deadline that no retrieved section names.                          #
+    # ------------------------------------------------------------------ #
+    ENABLE_COMPANION_CONCEPTS: bool = True
+
+    # Slots in the evidence pack allotted to companion-derived sections: both a
+    # FLOOR and a CEILING, because the remedy layer fails in both directions.
+    #
+    # Without a floor the companions are always "supporting", so they lose every
+    # leftover slot to the substantive concepts' own supporting sections and are
+    # retrieved only to be discarded at the cap — indistinguishable from never
+    # retrieving them.
+    #
+    # Without a ceiling they take over. The remedy concepts are broad
+    # ("recovering unpaid wages" alone maps to 14 sections, "labour court and
+    # tribunal" to 17), so on "employer hasn't paid me for two months" they
+    # filled 13 of 15 slots and pushed out the sections that actually answer the
+    # question. Three is enough to name a forum, an authority and a time limit.
+    COMPANION_SECTION_SLOTS: int = 3
+
+    # ------------------------------------------------------------------ #
     # Output guardrail — confidence                                        #
     #                                                                      #
     # Weights must sum to 1.0. Formula (CLAUDE.md section 6):             #
@@ -181,6 +207,14 @@ class Settings(BaseSettings):
     # Below this threshold the answer status is downgraded to
     # "insufficient_evidence".
     MIN_CONFIDENCE: float = 0.4
+
+    # Cap applied when the user's event predates the commencement of a cited
+    # Act (e.g. "retrenched in August 2025" against the IRC, in force from
+    # 21 Nov 2025). The retrieved sections are still real and verified — this
+    # is not a citation problem — but their APPLICABILITY to these facts is
+    # genuinely uncertain, which the numeric score must reflect rather than
+    # reporting the same confidence as a query with no such conflict.
+    TEMPORAL_MISMATCH_CONFIDENCE_CAP: float = 0.5
 
     # ------------------------------------------------------------------ #
     # Persona-aware output                                                 #

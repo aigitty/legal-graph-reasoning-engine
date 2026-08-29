@@ -11,7 +11,8 @@ matches, and ALSO grounds state.raw_query itself. No LLM here.
 from __future__ import annotations
 
 from agents.graph_state import LegalQueryState
-from agents.ontology import ground_query
+from agents.ontology import companion_concepts, ground_query
+from config import cfg
 
 
 def concept_grounding_node(state: LegalQueryState) -> dict:
@@ -58,7 +59,20 @@ def concept_grounding_node(state: LegalQueryState) -> dict:
             seen.add(concept_name)
             grounded.append(concept_name)
 
-    update: dict = {"grounded_concepts": grounded, "ungrounded_phrases": ungrounded}
+    # Remedy concepts implied by what was grounded. Deterministic table lookup,
+    # no LLM. Deliberately NOT merged into grounded_concepts: concept_coverage
+    # scores how much of the USER'S intent was grounded, and silently inflating
+    # the grounded set with concepts they never raised would raise confidence on
+    # the strength of law they did not ask for.
+    companions = (
+        companion_concepts(grounded) if cfg.ENABLE_COMPANION_CONCEPTS else []
+    )
+
+    update: dict = {
+        "grounded_concepts": grounded,
+        "ungrounded_phrases": ungrounded,
+        "companion_concepts": companions,
+    }
 
     if not grounded:
         update["warnings"] = state.warnings + [

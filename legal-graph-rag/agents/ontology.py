@@ -66,8 +66,20 @@ _GROUNDING_STOPWORDS = frozenset(
     please help question situation case matter thing status procedure process
     file filing apply applying seek seeking go going put putting use using
     next done doing entitled entitlement right rights valid validity
+    happen happens happened let lost
     """.split()
 )
+# The last line above is not filler — those words are the ENTIRE content of a
+# real alias once the rest is stopworded, so they became single-token overlap
+# matches that fire on ordinary English. "what happens to the employer" (an
+# alias of `penalties for employer offences`) reduces to "happen", which is rare
+# across the vocabulary and therefore passes the distinctiveness guard with a
+# perfect score — so "my company was taken over, what happens to my service?"
+# grounded to employer penalties and pulled six penalty and inspection sections
+# into the pack as PRIMARIES, crowding out the transfer and gratuity provisions
+# the question was actually about. Stopwording them costs nothing: stage-1
+# substring matching is not stopworded, so "what happens to the employer"
+# written verbatim still grounds exactly as before.
 
 # A single shared token only grounds a concept if the token is DISTINCTIVE —
 # present in at most this many concepts. "dispute" appears across industrial
@@ -118,12 +130,38 @@ _ALL_TERMS: dict[str, str] = {
 }
 
 
+# Derivational endings stripped so a query's VERB meets the vocabulary's NOUN.
+# Longest first, so "retrenchment" loses "ment" rather than being left alone.
+_SUFFIXES = ("ment", "ing", "ed")
+
+# A stem shorter than this is not a word, it is a collision waiting to happen:
+# "need" -> "ne", "used" -> "us", "payment" -> "pay". Keeping the original in
+# those cases costs a rare match; stripping them would ground on noise.
+_MIN_STEM = 4
+
+
 def _norm_token(token: str) -> str:
-    """Crude singularisation so 'wages'/'wage' and 'deductions'/'deduction' meet."""
+    """
+    Reduce a token to a comparable stem.
+
+    Handles plurals ('wages'/'wage', 'deductions'/'deduction') AND the
+    verb/noun split, which was a live grounding hole: the concept vocabulary is
+    written in nouns ("retrenchment", "dismissal") while users write verbs
+    ("must an employer RETRENCH workmen?"). "retrench" is not a substring of
+    "retrenchment" and shares no token with it, so that query grounded to
+    `compensation for injury at work` — matched on the stray word "workmen" —
+    and missed retrenchment entirely. Anyone whose phrasing the extraction LLM
+    did not happen to rewrite into the noun form got injury-compensation law
+    for a termination question.
+    """
     if len(token) > 3 and token.endswith("ies"):
-        return token[:-3] + "y"
-    if len(token) > 3 and token.endswith("s") and not token.endswith("ss"):
-        return token[:-1]
+        token = token[:-3] + "y"
+    elif len(token) > 3 and token.endswith("s") and not token.endswith("ss"):
+        token = token[:-1]
+
+    for suffix in _SUFFIXES:
+        if token.endswith(suffix) and len(token) - len(suffix) >= _MIN_STEM:
+            return token[: -len(suffix)]
     return token
 
 
@@ -144,6 +182,13 @@ _TERM_TOKENS: list[tuple[frozenset[str], str]] = [
     for term in concept.match_terms
     if (tokens := _content_tokens(term))
 ]
+
+# Token set of each concept's CANONICAL NAME only (no aliases). Used to exempt
+# single-word concepts from the distinctiveness guard below — see
+# _overlap_matches.
+_NAME_TOKENS: dict[str, frozenset[str]] = {
+    concept.name: frozenset(_content_tokens(concept.name)) for concept in CONCEPTS
+}
 
 # Document frequency of each token = how many distinct CONCEPTS use it anywhere
 # in their name or aliases. Drives the distinctiveness guard in _overlap_matches.
@@ -203,9 +248,26 @@ def _overlap_matches(phrase: str) -> list[str]:
         # Without this, "property dispute" grounds to `industrial dispute` on
         # the word "dispute" and the engine answers a property question with
         # labour law.
+        #
+        # EXEMPTION: the shared token covers the concept's whole CANONICAL NAME.
+        # For a single-word concept — `retrenchment`, `gratuity`, `bonus` — the
+        # user has written the concept itself, which is the strongest possible
+        # signal, yet document frequency counts it as common precisely BECAUSE
+        # it is the topic (four concepts mention retrenchment). That inverted the
+        # guard: "must an employer retrench workmen?" was denied `retrenchment`
+        # and kept only `compensation for injury at work`, matched on the stray
+        # word "workmen".
+        #
+        # Deliberately keyed on the NAME, not on any alias. Exempting aliases too
+        # would let "employ" (in the alias set of `re-employment of retrenched
+        # workmen`, DF 9) ground every query containing the word "employment".
         if len(shared) == 1:
             token = next(iter(shared))
-            if _TOKEN_DF.get(token, 0) > MAX_DF_FOR_SINGLE_TOKEN:
+            covers_full_name = shared == _NAME_TOKENS.get(concept_name, frozenset())
+            if (
+                not covers_full_name
+                and _TOKEN_DF.get(token, 0) > MAX_DF_FOR_SINGLE_TOKEN
+            ):
                 continue
         score = max(len(shared) / len(phrase_tokens), len(shared) / len(term_tokens))
         if score >= OVERLAP_CUTOFF and score > best.get(concept_name, 0.0):
@@ -314,12 +376,131 @@ def ground_query(text: str) -> list[str]:
     return []
 
 
-def relevance_for(concept_names: list[str]) -> dict[str, str]:
+# ---------------------------------------------------------------------------
+# Companion concepts — the remedy layer
+# ---------------------------------------------------------------------------
+#
+# WHY THIS EXISTS
+# ---------------
+# Grounding answers "what is this question about". It does not answer "and what
+# can this person actually DO about it", because a user never phrases that part:
+# they write "in what order must an employer retrench workmen?", not "...and
+# which forum hears a dispute about it".
+#
+# The consequence was visible in real output. The citizen prompt requires every
+# "What you can do next" step to be grounded in a retrieved section and forbids
+# inventing a forum, a deadline or an office — correctly, since an invented
+# tribunal is worse than no answer. But retrieval never reached the dispute
+# machinery, so there was nothing grounded to offer and the steps degraded to
+# "ask your employer for the reasons" and "review your employment agreement".
+# That is not a route to a remedy; it is what the reader could have written
+# themselves.
+#
+# So: when a query grounds to a GRIEVANCE concept, deterministically also
+# retrieve the concepts that carry the remedy for that family. No LLM, no
+# guessing — a curated adjacency, validated against the vocabulary at import.
+#
+# Companion concepts contribute SUPPORTING sections only (see relevance_for):
+# they are context for the answer, never the anchor of it. A retrenchment
+# question must still be answered by the retrenchment sections.
+_TERMINATION_REMEDIES = ("conciliation and settlement", "labour court and tribunal")
+_WAGE_REMEDIES = ("recovering unpaid wages", "appeal against an order")
+_BENEFIT_REMEDIES = ("recovering unpaid wages",)
+_INSPECTION_REMEDIES = ("labour inspector",)
+
+COMPANION_CONCEPTS: dict[str, tuple[str, ...]] = {
+    # Job loss — the dispute machinery is the route.
+    "wrongful termination": _TERMINATION_REMEDIES,
+    "retrenchment": _TERMINATION_REMEDIES,
+    "retrenchment compensation": _TERMINATION_REMEDIES,
+    "re-employment of retrenched workmen": _TERMINATION_REMEDIES,
+    "notice period": _TERMINATION_REMEDIES,
+    "lay-off": _TERMINATION_REMEDIES,
+    "factory closure": _TERMINATION_REMEDIES,
+    "unfair labour practice": _TERMINATION_REMEDIES,
+    "transfer of undertaking": _TERMINATION_REMEDIES,
+    "conditions of service": _TERMINATION_REMEDIES,
+    "standing orders": _TERMINATION_REMEDIES,
+    # Money owed — the wage-claim authority is the route.
+    "minimum wages": _WAGE_REMEDIES,
+    "floor wage": _WAGE_REMEDIES,
+    "overtime": _WAGE_REMEDIES,
+    "salary delay": _WAGE_REMEDIES,
+    "illegal wage deduction": _WAGE_REMEDIES,
+    "deductions from wages": _WAGE_REMEDIES,
+    "how and when wages must be paid": _WAGE_REMEDIES,
+    "bonus": _WAGE_REMEDIES,
+    "how bonus is calculated": _WAGE_REMEDIES,
+    "gender discrimination in wages": _WAGE_REMEDIES,
+    # Social-security benefits — recovery/appeal provisions of SSC 2020.
+    "gratuity": _BENEFIT_REMEDIES,
+    "gratuity nomination": _BENEFIT_REMEDIES,
+    "provident fund": _BENEFIT_REMEDIES,
+    "employees state insurance": _BENEFIT_REMEDIES,
+    "maternity benefit": _BENEFIT_REMEDIES,
+    "compensation for injury at work": _BENEFIT_REMEDIES,
+    # Hours and leave — enforcement is by inspection, not a tribunal.
+    "working hours": _INSPECTION_REMEDIES,
+    "weekly holiday": _INSPECTION_REMEDIES,
+    "annual leave": _INSPECTION_REMEDIES,
+    "rest interval and spreadover": _INSPECTION_REMEDIES,
+    "night work for women": _INSPECTION_REMEDIES,
+    "child labour": _INSPECTION_REMEDIES,
+}
+
+# Fail at IMPORT if the table names a concept that does not exist. A silent typo
+# here would disable a remedy for a whole family of queries and show up only as
+# a vague answer months later — exactly the class of bug this table exists to
+# fix.
+_KNOWN_CONCEPT_NAMES = {concept.name for concept in CONCEPTS}
+_BAD_COMPANIONS = sorted(
+    {
+        name
+        for trigger, companions in COMPANION_CONCEPTS.items()
+        for name in (trigger, *companions)
+        if name not in _KNOWN_CONCEPT_NAMES
+    }
+)
+if _BAD_COMPANIONS:
+    raise ValueError(
+        "COMPANION_CONCEPTS references concepts absent from concept_map.json: "
+        + ", ".join(_BAD_COMPANIONS)
+    )
+
+
+def companion_concepts(grounded: list[str]) -> list[str]:
+    """
+    Remedy concepts implied by what the user actually asked about.
+
+    Returns only concepts NOT already grounded — a user who explicitly asked
+    about tribunals has them anchored as primaries already, and should not have
+    them demoted to supporting by this layer.
+    """
+    already = set(grounded)
+    extra: list[str] = []
+    for concept_name in grounded:
+        for companion in COMPANION_CONCEPTS.get(concept_name, ()):
+            if companion not in already:
+                already.add(companion)
+                extra.append(companion)
+    return extra
+
+
+def relevance_for(
+    concept_names: list[str],
+    companion_names: list[str] | tuple[str, ...] = (),
+) -> dict[str, str]:
     """
     Merge section relevance across the given concept names.
 
     "primary" wins over "supporting" if a section appears under multiple
     concepts with different relevance.
+
+    Sections reached ONLY through a companion concept are always "supporting",
+    however they are curated. A tribunal-constitution provision is genuinely
+    primary for the question "which court hears my dispute", but it must not
+    outrank the retrenchment sections for someone who asked about retrenchment
+    and never mentioned a court.
     """
     merged: dict[str, str] = {}
     for concept in CONCEPTS:
@@ -328,6 +509,12 @@ def relevance_for(concept_names: list[str]) -> dict[str, str]:
         for section_id, relevance in concept.section_relevance.items():
             if merged.get(section_id) != "primary":
                 merged[section_id] = relevance
+
+    for concept in CONCEPTS:
+        if concept.name not in companion_names:
+            continue
+        for section_id in concept.section_relevance:
+            merged.setdefault(section_id, "supporting")
     return merged
 
 

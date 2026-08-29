@@ -39,6 +39,7 @@ from __future__ import annotations
 
 import logging
 
+from agents.calculators import Calculation
 from agents.graph_state import LegalQueryState
 from graph.queries import get_section_by_id
 from config import cfg
@@ -178,6 +179,54 @@ def _sufficiency_score(state: LegalQueryState) -> float:
     return 0.0
 
 
+def _verify_calculations(
+    state: LegalQueryState, retrieval_ids: set[str]
+) -> tuple[list[Calculation], list[str]]:
+    """
+    Keep only Calculations whose section exists in Neo4j.
+
+    Provenance (the section was actually retrieved for this query) is already
+    guaranteed at the point calculators.compute_available() is called in
+    retrieval_node — it is gated on the same retrieved_section_ids the ranker
+    produced. This adds the EXISTENCE half of the same two-part check ordinary
+    citations get (CLAUDE.md rule 5): a Calculation is still a claim that cites
+    a section, and gets no exemption from verification for being arithmetic
+    instead of prose. Degrades the same way _verify_citations does if Neo4j
+    becomes unreachable — provenance-only, with a warning.
+    """
+    verified: list[Calculation] = []
+    warnings: list[str] = []
+    db_available = True
+
+    for calc in state.calculations or []:
+        if calc.section_id not in retrieval_ids:
+            warnings.append(
+                f"Dropped calculation {calc.label!r}: its section "
+                f"{calc.section_id!r} was not in the retrieval set."
+            )
+            continue
+
+        if db_available:
+            try:
+                if get_section_by_id(calc.section_id) is None:
+                    warnings.append(
+                        f"Dropped calculation {calc.label!r}: section "
+                        f"{calc.section_id!r} not found in Neo4j."
+                    )
+                    continue
+            except Exception as exc:  # noqa: BLE001
+                db_available = False
+                logger.warning(
+                    "Neo4j calculation verification unavailable (%s); "
+                    "falling back to provenance-only checks.",
+                    exc,
+                )
+
+        verified.append(calc)
+
+    return verified, warnings
+
+
 def _citation_validity(verified: list[str], cited: list[str]) -> float:
     """Fraction of the model's citations that survived verification."""
     if not cited:
@@ -193,6 +242,9 @@ def output_guardrail_node(state: LegalQueryState) -> dict:
     verified, citation_warnings = _verify_citations(state)
     cited = state.cited_section_ids or []
 
+    retrieval_ids = state.retrieval.section_ids if state.retrieval is not None else set()
+    verified_calculations, calc_warnings = _verify_calculations(state, retrieval_ids)
+
     factors = {
         "concept_coverage": round(_concept_coverage(state), 4),
         "seed_strength": round(_seed_strength(state), 4),
@@ -204,7 +256,24 @@ def output_guardrail_node(state: LegalQueryState) -> dict:
         4,
     )
 
-    warnings = list(citation_warnings)
+    warnings = list(citation_warnings) + list(calc_warnings)
+
+    # A temporal mismatch is not a grounding, retrieval, or citation problem —
+    # every factor above can legitimately score 1.0 — but it means the cited
+    # law's APPLICABILITY to these specific facts is genuinely uncertain, which
+    # the numeric score must reflect. Capped, not zeroed: the sections are still
+    # real, verified, and often close to right (see CLAUDE.md — IDA s.25F and
+    # IRC s.70 both give one month's notice).
+    if state.temporal_conflicts:
+        capped = min(confidence, cfg.TEMPORAL_MISMATCH_CONFIDENCE_CAP)
+        if capped < confidence:
+            warnings.append(
+                f"Confidence capped at {capped:.2f}: the query's event predates "
+                f"the commencement of the cited law, so its applicability to "
+                f"these facts is uncertain."
+            )
+        confidence = capped
+
     if confidence < MIN_CONFIDENCE:
         status = "insufficient_evidence"
         warnings.append(
@@ -224,6 +293,7 @@ def output_guardrail_node(state: LegalQueryState) -> dict:
 
     return {
         "verified_section_ids": verified,
+        "verified_calculations": verified_calculations,
         "confidence": confidence,
         "confidence_factors": factors,
         "status": status,

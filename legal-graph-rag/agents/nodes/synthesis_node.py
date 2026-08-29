@@ -109,8 +109,14 @@ def _format_section(section: SectionContext, rank: int) -> str:
     the prompt tell the model to work down from the top.
     """
     full_text = " ".join(section.section_text.split())
+    # REMEDY is surfaced as its own tag rather than folded into SUPPORTING.
+    # Retrieval knows for certain which sections carry the forum, authority,
+    # appeal route or time limit; the prompt was left to infer that from section
+    # titles and could not, so these sat mid-pack and went unused while
+    # "What you can do next" fell back to "review your contract".
+    tag = "REMEDY" if section.via_remedy else section.relevance.upper()
     return (
-        f"#{rank} [{section.section_id}] ({section.relevance.upper()}) "
+        f"#{rank} [{section.section_id}] ({tag}) "
         f"{section.act_name} — Section {section.section_number}: "
         f"{section.section_title}\n{full_text}"
     )
@@ -174,11 +180,76 @@ def _build_human_message(state: LegalQueryState, persona: str) -> str:
     else:
         suff = "unknown"
 
+    # Name the PRIMARY sections explicitly rather than leaving the model to
+    # notice the (PRIMARY) tags itself. On "in what order must an employer
+    # retrench workmen?" the pack held IRC s.71 (the order), s.70 (notice +
+    # compensation) and s.79 (prior government permission) all as primaries, and
+    # the citizen answer cited only s.71 — so a worker about to be retrenched was
+    # told the ordering rule and nothing about the money they were owed. The
+    # prompt asked for breadth; an explicit count is what makes it checkable.
+    primary_ids = [
+        s.section_id for s in sections if s.relevance.lower() == "primary"
+    ]
+    if primary_ids:
+        primary_note = (
+            f"\n\nPRIMARY sections in this pack ({len(primary_ids)}): "
+            + ", ".join(primary_ids)
+            + ". Each of these was curated as directly on point for one of the "
+            "grounded concepts. Check each one for a separate entitlement, "
+            "obligation or deadline before you decide which to leave out."
+        )
+    else:
+        primary_note = ""
+
+    # TEMPORAL MISMATCH: the user's own stated event date predates the
+    # commencement of an Act the pack treats as primary. This is placed FIRST
+    # and phrased as a MUST, because it is the one failure mode more dangerous
+    # than an honest gap — a confidently wrong answer. final_response_node also
+    # enforces this deterministically regardless of what the model does with it
+    # here; this instruction exists so the model's own prose gets it right too,
+    # rather than reading as contradicted by a bolted-on notice.
+    temporal_note = ""
+    if state.temporal_conflicts:
+        lines = []
+        for act_name, when, predecessor in state.temporal_conflicts:
+            older = f" The {predecessor} may govern instead." if predecessor else ""
+            lines.append(f"- {act_name} only came into force on {when}.{older}")
+        temporal_note = (
+            "\n\nTEMPORAL MISMATCH — ADDRESS THIS FIRST, IN YOUR OPENING:\n"
+            "The event date in this query is BEFORE the following Act(s) "
+            "existed:\n" + "\n".join(lines) + "\nYou MUST say this plainly before "
+            "explaining what the Act says, and make clear the entitlement you "
+            "describe may not be the one that actually applied on that date."
+        )
+
+    # A deterministic rupee figure will be appended below your answer for any
+    # entitlement calculators.py could compute from the salary/tenure given.
+    # Telling the model this exists — and to describe the RULE in words without
+    # doing its own multiplication — is what stops two different numbers
+    # (the model's mental arithmetic and the verified one) from appearing side
+    # by side and contradicting each other. LLM arithmetic is not trustworthy
+    # enough to be the number a user acts on; that is the entire reason this
+    # calculator is Python, not a prompt instruction.
+    calc_note = ""
+    if state.calculations:
+        labels = ", ".join(c.label for c in state.calculations)
+        calc_note = (
+            f"\n\nA VERIFIED CALCULATION for ({labels}) will be shown to the "
+            "user automatically after your answer. Describe the ENTITLEMENT "
+            "and the rule in words (e.g. \"fifteen days' pay for every year "
+            "you worked\") but do NOT state a final rupee total yourself, "
+            "even if you could estimate one — that would risk a number that "
+            "disagrees with the verified calculation shown separately."
+        )
+
     return (
         f"User query:\n{state.raw_query}\n\n"
         f"Extracted details:\n{details}\n\n"
         f"Sufficiency verdict: {suff}\n\n"
         f"EVIDENCE PACK ({len(sections)} sections):\n{pack}"
+        f"{primary_note}"
+        f"{temporal_note}"
+        f"{calc_note}"
     )
 
 

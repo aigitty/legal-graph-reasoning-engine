@@ -412,7 +412,14 @@
       "laid off",
       "temporary suspension of work",
       "no work given",
-      "lay off compensation"
+      "lay off compensation",
+      "stopped giving me work",
+      "stopped giving work",
+      "not giving me work",
+      "no work being given",
+      "sent home without work",
+      "asked not to come to work",
+      "factory has stopped work"
     ],
     "maps_to": [
       {

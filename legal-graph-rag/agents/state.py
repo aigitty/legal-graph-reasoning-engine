@@ -57,6 +57,15 @@ class SectionContext:
     repealed_by: str = ""
     repeal_authority: str = ""
 
+    # True when this section was reached ONLY through a companion (remedy)
+    # concept — the forum, authority, appeal route or time limit for acting,
+    # rather than the substantive rule. Retrieval knows this for certain; the
+    # synthesis prompt was previously left to infer it from section titles and
+    # could not do it reliably, so the remedy sections were retrieved, ranked
+    # mid-pack, and then ignored. Presentation only: it never affects what is
+    # verified or allowed to be cited.
+    via_remedy: bool = False
+
     # --- retrieval provenance / ranking (graph/ranking.py) ---
     hop_distance: int = 0     # 0 = concept anchor, n = n CITES hops from one
     concept_hits: int = 1     # how many grounded concepts reached this section

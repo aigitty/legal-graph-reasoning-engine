@@ -47,7 +47,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from agents.citations import CITATION_RE, looks_like_citation  # noqa: E402
+from agents.citations import parse_citations  # noqa: E402
 from agents.persona import CITIZEN, normalize_persona  # noqa: E402
 from graph import act_registry  # noqa: E402
 from graph_agent import run  # noqa: E402
@@ -63,17 +63,22 @@ def _markers(text: str) -> list[str]:
     """
     Base section ids of every citation marker in `text`.
 
-    Uses the SAME pattern as the pipeline (agents/citations.py) so the harness
+    Delegates to the pipeline's own parser (agents/citations.py) so the harness
     detects exactly what the stripper could have missed — including sub-section
-    forms like [IDA_1947_S7(1)], which an earlier, narrower pattern in both the
-    pipeline and this harness silently ignored, letting unverified markers reach
-    the user while every check reported green.
+    forms like [IDA_1947_S7(1)] and grouped forms like [X_S1, X_S2], which
+    earlier, narrower patterns in both the pipeline and this harness silently
+    ignored, letting unverified markers reach the user while every check
+    reported green.
+
+    Calls parse_citations() rather than driving CITATION_RE directly. This used
+    to read `match.group(1)`, which coupled the harness to the regex's internal
+    group numbering: when the pattern grew to handle grouped markers, group 1
+    became the whole comma-separated list rather than one base id, and the
+    harness reported 12 phantom leaks with names like
+    'COW_2019_S42(1), COW_2019_S42(4)'. Asking the module what the base ids are,
+    instead of re-deriving them from its regex, cannot drift that way.
     """
-    return [
-        match.group(1)
-        for match in CITATION_RE.finditer(text)
-        if looks_like_citation(match.group(1))
-    ]
+    return parse_citations(text)
 
 
 def load_corpus() -> dict[str, dict[str, Any]]:

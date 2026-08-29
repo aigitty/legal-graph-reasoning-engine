@@ -42,8 +42,9 @@ from typing import Any
 
 from graph import act_registry
 from graph.queries import get_section_by_id
-from graph.ranking import RankCandidate, rank_and_cap
+from graph.ranking import RankCandidate, rank, rank_and_cap
 from graph.traversal import traverse
+from agents import calculators
 from agents.state import RetrievalResult, SectionContext
 from agents.graph_state import LegalQueryState
 from agents.ontology import relevance_for
@@ -145,6 +146,62 @@ def _direct_section_lookups(
     return found
 
 
+def _rank_with_companion_budget(
+    query: str,
+    candidates: list[RankCandidate],
+    companion_only: set[str],
+    limit: int,
+) -> list[RankCandidate]:
+    """
+    Rank and cap, giving the remedy layer a FIXED BUDGET of the evidence pack.
+
+    Companion sections answer "what can this person do about it", which the user
+    never asks and always needs. But they are a garnish, not the dish, and
+    letting them compete on score alone fails in both directions:
+
+      - As pure supporting sections they lose every leftover slot to the
+        substantive concepts' own supporting sections, so they are retrieved and
+        then dropped at the cap — the same outcome as never retrieving them, and
+        the reason "What you can do next" had no forum to point at.
+      - Given a free run they take over. The remedy concepts are broad, so on
+        "employer hasn't paid me for two months" they filled 13 of 15 slots and
+        crowded out the wage provisions that answer the question.
+
+    So companions are capped at cfg.COMPANION_SECTION_SLOTS and the substantive
+    concepts get the rest, keeping rank_and_cap's guarantee that no curated
+    PRIMARY is dropped for a better-scoring supporting section. Companions may
+    exceed their budget only to fill space the substantive set cannot — an
+    unused slot helps nobody.
+    """
+    if limit <= 0 or not companion_only:
+        return rank_and_cap(query, candidates, limit=limit)
+
+    substantive = [c for c in candidates if c.section_id not in companion_only]
+    companion = [c for c in candidates if c.section_id in companion_only]
+
+    budget = min(max(cfg.COMPANION_SECTION_SLOTS, 0), len(companion))
+    kept_substantive = rank_and_cap(query, substantive, limit=limit - budget)
+
+    # Whatever the substantive set left on the table goes back to the remedy
+    # layer rather than shrinking the pack.
+    kept_companion = rank(query, companion)[: limit - len(kept_substantive)]
+
+    merged_ids = {c.section_id for c in kept_substantive} | {
+        c.section_id for c in kept_companion
+    }
+    if kept_companion:
+        logger.info(
+            "Companion budget: %s of %s slots -> %s",
+            len(kept_companion),
+            limit,
+            [c.section_id for c in kept_companion],
+        )
+    # One final rank over the survivors so the pack is emitted in true score
+    # order — synthesis is told to work down from #1, so the order is load
+    # bearing, not cosmetic.
+    return [c for c in rank(query, candidates) if c.section_id in merged_ids]
+
+
 def graph_traversal_node(state: LegalQueryState) -> dict[str, Any]:
     concepts = state.grounded_concepts or (
         [state.raw_query.strip().lower()] if state.raw_query.strip() else []
@@ -153,8 +210,18 @@ def graph_traversal_node(state: LegalQueryState) -> dict[str, Any]:
     if not concepts:
         return {"error": "No grounded concepts and no raw_query to fall back to."}
 
+    # Companion (remedy) concepts are traversed alongside the grounded ones but
+    # tracked separately throughout: relevance_for() never lets them contribute a
+    # PRIMARY, and the cap below reserves them a fixed small share rather than
+    # letting them compete for the substantive slots.
+    companions = [
+        name for name in (state.companion_concepts or []) if name not in concepts
+    ]
+    companion_set = set(companions)
+    all_concepts = concepts + companions
+
     jurisdiction = _resolve_jurisdiction(state)
-    relevance_map = relevance_for(concepts)
+    relevance_map = relevance_for(concepts, companions)
 
     sections_by_id: dict[str, SectionContext] = {}
     concept_hits: dict[str, int] = {}
@@ -164,7 +231,11 @@ def graph_traversal_node(state: LegalQueryState) -> dict[str, Any]:
     suppressed_acts: dict[str, str] = {}
     confidences: list[float] = []
 
-    for concept in concepts:
+    # Section ids reached by at least one concept the user ACTUALLY asked about.
+    # Anything outside this set arrived only via the remedy layer.
+    substantive_ids: set[str] = set()
+
+    for concept in all_concepts:
         try:
             tr = traverse(
                 concept_name=concept,
@@ -182,7 +253,13 @@ def graph_traversal_node(state: LegalQueryState) -> dict[str, Any]:
         for act_id, reason in (getattr(tr, "suppressed_acts", None) or {}).items():
             suppressed_acts.setdefault(act_id, reason)
 
-        confidences.append(float(getattr(tr, "confidence", 0.0) or 0.0))
+        # Seed strength must reflect the anchors for what the USER asked about.
+        # Companion concepts are curated with their own primary anchors, so
+        # including them here would let a strong remedy anchor mask a weak
+        # substantive one — reporting high confidence on the strength of law
+        # the user never asked for.
+        if concept not in companion_set:
+            confidences.append(float(getattr(tr, "confidence", 0.0) or 0.0))
 
         for raw_section in (getattr(tr, "all_sections", []) or []):
             section_id = str(raw_section.get("section_id") or raw_section.get("id") or "")
@@ -192,6 +269,9 @@ def graph_traversal_node(state: LegalQueryState) -> dict[str, Any]:
                 source_concept=concept,
                 hop_distance=int(raw_section.get("hop_distance", 0) or 0),
             )
+
+            if concept not in companion_set:
+                substantive_ids.add(sec.section_id)
 
             existing = sections_by_id.get(sec.section_id)
             if existing is None:
@@ -219,6 +299,12 @@ def graph_traversal_node(state: LegalQueryState) -> dict[str, Any]:
 
     # ---- sections the user named explicitly --------------------------------
     for section in _direct_section_lookups(state, jurisdiction):
+        # A section the user named explicitly is substantive by definition. It
+        # may not have been reached by any concept traversal, and without this
+        # it would fall into `companion_only` below and be rationed by the
+        # remedy budget — the one section they actually asked for.
+        substantive_ids.add(section.section_id)
+
         existing = sections_by_id.get(section.section_id)
         if existing is None:
             sections_by_id[section.section_id] = section
@@ -251,7 +337,16 @@ def graph_traversal_node(state: LegalQueryState) -> dict[str, Any]:
         for s in sections
     ]
 
-    ranked = rank_and_cap(state.raw_query, candidates, limit=MAX_SECTIONS)
+    companion_only = {s.section_id for s in sections} - substantive_ids
+    for section in sections:
+        section.via_remedy = section.section_id in companion_only
+
+    ranked = _rank_with_companion_budget(
+        state.raw_query,
+        candidates,
+        companion_only=companion_only,
+        limit=MAX_SECTIONS,
+    )
 
     ordered_sections: list[SectionContext] = []
     for candidate in ranked:
@@ -300,6 +395,27 @@ def graph_traversal_node(state: LegalQueryState) -> dict[str, Any]:
             + "; confirm the state before relying on it."
         )
 
+    # ---- pre-commencement check --------------------------------------------
+    # Scoped to PRIMARY acts only (never companion/remedy-only ones): those are
+    # the substantive law the answer actually asserts applies to the user's
+    # facts. relevance_for() never lets a companion concept contribute a
+    # primary, so this is already the "law the answer stands on", not the
+    # forum/process sections.
+    primary_act_ids = {
+        s.act_id for s in ordered_sections if s.relevance.lower() == "primary"
+    }
+    event_date = state.extraction.event_date if state.extraction else None
+    temporal_conflicts = act_registry.commencement_conflicts(
+        event_date, primary_act_ids
+    )
+    if temporal_conflicts:
+        for act_name, when, predecessor in temporal_conflicts:
+            older = f" ({predecessor} may apply instead)" if predecessor else ""
+            warnings.append(
+                f"TEMPORAL MISMATCH: the query's event predates {when}, when "
+                f"the {act_name} came into force{older}."
+            )
+
     result = RetrievalResult(
         concepts_queried=concepts,
         sections=ordered_sections,
@@ -313,14 +429,27 @@ def graph_traversal_node(state: LegalQueryState) -> dict[str, Any]:
     )
 
     logger.info(
-        "Retrieval: %s concepts -> %s sections (jurisdiction=%s, suppressed=%s)",
+        "Retrieval: %s concepts (+%s companion) -> %s sections "
+        "(jurisdiction=%s, suppressed=%s)",
         len(concepts),
+        len(companions),
         len(ordered_sections),
         result.jurisdiction_applied,
         list(suppressed_acts),
     )
 
-    update: dict[str, Any] = {"retrieval": result}
+    calculations = calculators.compute_available(
+        grounded_concepts=concepts,
+        monthly_salary=state.extraction.monthly_salary if state.extraction else None,
+        years_of_service=state.extraction.years_of_service if state.extraction else None,
+        retrieved_section_ids=kept_ids,
+    )
+
+    update: dict[str, Any] = {
+        "retrieval": result,
+        "temporal_conflicts": temporal_conflicts,
+        "calculations": calculations,
+    }
     if warnings:
         update["warnings"] = state.warnings + warnings
     return update

@@ -48,6 +48,15 @@
       "shut down the factory",
       "closure of undertaking"
     ],
+    "lay_off": [
+      "stopped giving me work",
+      "stopped giving work",
+      "not giving me work",
+      "no work being given",
+      "sent home without work",
+      "asked not to come to work",
+      "factory has stopped work"
+    ],
     "wrongful_termination": [
       "sacked",
       "let go from",

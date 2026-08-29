@@ -36,6 +36,7 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from agents.calculators import Calculation
 from agents.state import RetrievalResult
 from agents.schemas import ExtractionResult, SufficiencyVerdict
 
@@ -57,6 +58,28 @@ class LegalQueryState(BaseModel):
     # another produced none. output_guardrail_node scores concept_coverage from
     # this (CLAUDE.md section 6).
     ungrounded_phrases: list[str] = Field(default_factory=list)
+    # Remedy concepts added deterministically from the grounded ones
+    # (agents/ontology.COMPANION_CONCEPTS) — "how do I enforce this", which a
+    # user never asks but always needs. Kept SEPARATE from grounded_concepts so
+    # retrieval can demote whatever they reach to supporting: they are the route
+    # to the remedy, never the anchor of the answer.
+    companion_concepts: list[str] = Field(default_factory=list)
+    # Commencement conflicts: (act_name, commencement_date, predecessor_name)
+    # for every PRIMARY act that had not yet commenced when the user's own
+    # stated event_date happened. Computed once in retrieval_node (the first
+    # point where both extraction.event_date and the retrieved acts are known)
+    # and read by synthesis (to prompt the model to address it), the output
+    # guardrail (to cap confidence), and final_response (to guarantee the
+    # warning reaches the user even if the LLM omits it).
+    temporal_conflicts: list[tuple[str, str, str]] = Field(default_factory=list)
+
+    # Deterministic entitlement calculations (agents/calculators.py) — raw
+    # output of retrieval_node, gated only on provenance (the section must have
+    # been retrieved). `verified_calculations` is the subset output_guardrail_node
+    # additionally confirmed exists in Neo4j; ONLY that list may reach the user,
+    # mirroring verified_section_ids for ordinary citations.
+    calculations: list[Calculation] = Field(default_factory=list)
+    verified_calculations: list[Calculation] = Field(default_factory=list)
     max_hops: int = 2
     retrieval: Optional[RetrievalResult] = None
     sufficiency: Optional[SufficiencyVerdict] = None
